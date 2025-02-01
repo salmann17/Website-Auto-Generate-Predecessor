@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Menggunakan font Figtree untuk judul */
+.font-figtree {
+    font-family: 'Figtree', sans-serif;
+}
+
+/* Menggunakan font Inter untuk teks biasa */
+.font-inter {
+    font-family: 'Inter', sans-serif;
+}
+
