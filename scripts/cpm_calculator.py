@@ -1,160 +1,133 @@
 from flask import Flask, request, jsonify, send_file
 import networkx as nx
+import os
 import matplotlib.pyplot as plt
 from flask_cors import CORS
-import math
-import textwrap
 
 app = Flask(__name__)
 CORS(app)
-
-COLOR_SCHEME = {
-    'background': 'none',
-    'node': '#2C3E50',
-    'node_border': '#34495E',
-    'edge': '#95A5A6',
-    'text': '#ECF0F1',
-    'critical_path': '#E74C3C',
-    'duration_text': '#27AE60'
-}
-
-def calculate_style(num_nodes, max_label_length):
-    """Menghitung parameter visual dengan pertimbangan panjang label"""
-    base_scale = math.log(num_nodes + 5)
-    return {
-        'node_size': max(800, 4000 - num_nodes*30 - max_label_length*10),
-        'font_size': max(8, 14 - num_nodes//8 - max_label_length//4),
-        'arrow_size': max(12, 25 - num_nodes//8),
-        'edge_width': max(1.0, 2.5 - num_nodes/80),
-        'fig_width': max(12, 6 + num_nodes//3 + max_label_length//10),
-        'fig_height': max(8, 5 + num_nodes//4),
-        'title_size': max(12, 18 - num_nodes//15),
-        'wrap_width': max(15, 25 - num_nodes//10)
-    }
-
-def create_label(text, duration, wrap_width):
-    """Membuat label dengan text wrapping"""
-    wrapped = textwrap.fill(text, width=wrap_width)
-    return f"{wrapped}\n({duration} hari)"
 
 @app.route('/run-cpm', methods=['POST'])
 def run_cpm():
     try:
         data = request.get_json()
+        print("\U0001F4E9 Data diterima dari Laravel:", data)
+
         G = nx.DiGraph()
-        max_label_length = 0
-        
-        # Bangun graph dengan label yang dirapikan
+
+        # Tambahkan node dan edge berdasarkan data
         for task_name, info in data.items():
-            label_length = len(task_name)
-            if label_length > max_label_length:
-                max_label_length = label_length
-                
-            G.add_node(task_name, 
-                      durasi=info['durasi'],
-                      label=task_name)
+            G.add_node(task_name, durasi=info['durasi'])
             for pre_task in info['syarat']:
                 G.add_edge(pre_task, task_name, weight=info['durasi'])
 
+        # Cek apakah ada siklus di dalam graph
         if not nx.is_directed_acyclic_graph(G):
             return jsonify({"error": "Graph contains a cycle!"}), 400
 
+        # Cari jalur kritis
         critical_path = nx.dag_longest_path(G, weight='durasi')
-        num_nodes = len(G.nodes())
-        style = calculate_style(num_nodes, max_label_length)
 
-        # Setup figure
-        plt.figure(figsize=(style['fig_width'], style['fig_height']), 
-                 facecolor=COLOR_SCHEME['background'],
-                 dpi=300,
-                 layout='constrained')
+        # **Menentukan level tiap node berdasarkan urutan topologi**
+        level_map = {}
+        for node in nx.topological_sort(G):
+            predecessors = list(G.predecessors(node))
+            if predecessors:
+                level_map[node] = max(level_map[p] for p in predecessors) + 1
+            else:
+                level_map[node] = 0  # Node awal diberi level 0
+
+        # Pastikan semua node mendapatkan level agar tidak terjadi error
+        for node in G.nodes:
+            if node not in level_map:
+                level_map[node] = 0  # Default level jika tidak ditemukan
+
+        # **Atur agar node pertama dimulai dari sebelah kiri**
+        first_nodes = [node for node in G.nodes if level_map[node] == 0]
+        if first_nodes:
+            for node in first_nodes:
+                level_map[node] = -1  # Pastikan node pertama lebih kiri dari lainnya
+
+        # **Gunakan layout multipartite agar lebih rapi dari kiri ke kanan**
+        try:
+            pos = nx.multipartite_layout(G, subset_key=lambda n: level_map[n])
+        except Exception as e:
+            print(f"⚠️ Multipartite Layout Error: {e}, menggunakan kamada_kawai_layout sebagai backup")
+            pos = nx.kamada_kawai_layout(G)  # Backup jika multipartite gagal
+
+        # **FIGSIZE OTOMATIS BERUBAH SESUAI JUMLAH NODE**
+        node_count = len(G.nodes)
+        figsize_x = max(8, min(22, node_count * 0.8))  # Lebar gambar
+        figsize_y = max(6, min(18, node_count * 0.6))  # Tinggi gambar
+        plt.figure(figsize=(figsize_x, figsize_y), facecolor='white')
+
+        # **Konfigurasi tampilan grafik**
         ax = plt.gca()
-        ax.set_facecolor(COLOR_SCHEME['background'])
-        
-        # Hierarchical layout dengan penyesuaian
-        pos = nx.multipartite_layout(G, subset_key="layer", align='horizontal')
-        
-        # Update labels dengan text wrapping
-        labels = {node: create_label(node, G.nodes[node]['durasi'], style['wrap_width']) 
-                for node in G.nodes()}
+        ax.set_facecolor('white')  
 
-        # Draw elements
-        nx.draw_networkx_nodes(
-            G, pos,
-            node_color=COLOR_SCHEME['node'],
-            node_size=style['node_size'],
-            edgecolors=COLOR_SCHEME['node_border'],
-            linewidths=1.5,
-            alpha=0.95
+        # **Gambar node**
+        nx.draw(
+            G,
+            pos,
+            with_labels=True,
+            labels={node: node for node in G.nodes()},
+            node_color='lightblue',
+            node_size=3500,
+            font_size=12,
+            font_color='black',
+            font_weight='bold',
+            linewidths=2,
+            edgecolors='black'
         )
 
+        # **Tambahkan label bobot pada edges (durasi aktivitas)**
+        edge_labels = {(u, v): G[u][v]['weight'] for u, v in G.edges}
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='blue', font_size=10)
+
+        # **Garis dan panah lebih jelas**
         nx.draw_networkx_edges(
-            G, pos,
-            edge_color=COLOR_SCHEME['edge'],
-            width=style['edge_width'],
-            arrowsize=style['arrow_size'],
-            arrowstyle='-|>,head_width=0.6,head_length=0.6',
-            alpha=0.85
+            G,
+            pos,
+            edgelist=G.edges,
+            edge_color='gray',
+            arrows=True,
+            arrowsize=30,  # Ukuran panah lebih besar
+            width=2
         )
 
-        # Critical path
-        critical_edges = list(zip(critical_path[:-1], critical_path[1:]))
-        nx.draw_networkx_edges(
-            G, pos,
-            edgelist=critical_edges,
-            edge_color=COLOR_SCHEME['critical_path'],
-            width=style['edge_width']*2,
-            style='dashed',
-            alpha=0.95
-        )
+        # **Garis tebal untuk Critical Path**
+        path_edges = list(zip(critical_path[:-1], critical_path[1:]))
+        nx.draw_networkx_edges(G, pos, edgelist=path_edges, edge_color='red', width=3, arrowsize=30)
 
-        nx.draw_networkx_labels(
-            G, pos,
-            labels=labels,
-            font_size=style['font_size'],
-            font_color=COLOR_SCHEME['text'],
-            verticalalignment='center',
-            horizontalalignment='center',
-            font_family='DejaVu Sans',
-            bbox=dict(
-                facecolor=COLOR_SCHEME['node'],
-                edgecolor=COLOR_SCHEME['node_border'],
-                boxstyle='round,pad=0.3',
-                alpha=0.9
-            )
-        )
-
-        plt.title('Critical Path Method (CPM)',
-                fontsize=style['title_size'],
-                color=COLOR_SCHEME['text'],
-                pad=20)
-        plt.axis('off')
-
+        # **Konfigurasi akhir plot**
+        plt.title('Critical Path Method (CPM) Graph', fontsize=14, fontweight='bold')
+        plt.axis('off')  
+        plt.tight_layout()
         img_path = "output_graph.png"
-        plt.savefig(img_path, 
-                  transparent=True,
-                  bbox_inches='tight',
-                  pad_inches=0.3,
-                  dpi=300)
+        plt.savefig(img_path, dpi=300)
         plt.close()
 
-        return jsonify({"image": "http://127.0.0.1:5000/get-image"})
-    
+        # **Validasi apakah gambar berhasil dibuat**
+        if not os.path.exists(img_path):
+            print("❌ ERROR: Gambar tidak ditemukan setelah disimpan!")
+            return jsonify({"error": "Gagal menyimpan gambar"}), 500
+        else:
+            print(f"✅ Gambar berhasil disimpan: {img_path}")
+
+        return jsonify({
+            "image": "http://127.0.0.1:5000/get-image"
+        })
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-def assign_layers(G):
-    """Menentukan layer hierarki untuk tiap node"""
-    layers = {}
-    for node in nx.topological_sort(G):
-        predecessors = list(G.predecessors(node))
-        layers[node] = max([layers[p] for p in predecessors], default=-1) + 1
-    nx.set_node_attributes(G, layers, "layer")
-    return layers
 
 @app.route('/get-image', methods=['GET'])
 def get_image():
     return send_file("c://github/Website-CPM/output_graph.png", mimetype="image/png")
+
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({"message": "Flask API is running"}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

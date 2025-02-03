@@ -54,9 +54,15 @@ class NodeController extends Controller
     public function updateNodes(Request $request)
     {
         $data = $request->input('data');
-        $newIdsMap = []; // Untuk mapping prioritas sementara ke ID baru
 
-        // Proses semua node yang sudah ada
+        // Urutkan data berdasarkan prioritas agar disimpan dengan urutan yang benar
+        usort($data, function ($a, $b) {
+            return $a['prioritas'] - $b['prioritas'];
+        });
+
+        $newIdsMap = [];
+
+        // Perbarui node yang sudah ada
         foreach ($data as $row) {
             if (!empty($row['id'])) {
                 $node = Node::find($row['id']);
@@ -70,36 +76,26 @@ class NodeController extends Controller
             }
         }
 
-        // Proses node baru (yang belum punya ID)
+        // Simpan node baru (yang belum memiliki ID)
         foreach ($data as $row) {
             if (empty($row['id'])) {
                 $newNode = Node::create([
                     'activity' => $row['activity'],
                     'durasi' => $row['durasi'],
                     'prioritas' => $row['prioritas'],
-                    'project_idproject' => $row['project_idproject'] 
+                    'project_idproject' => $row['project_idproject']
                 ]);
                 $newIdsMap[$row['prioritas']] = $newNode->id;
             }
         }
 
-        // Update semua node untuk prioritas yang berubah
-        foreach ($data as $row) {
-            if (!empty($row['id'])) {
-                Node::where('id', $row['id'])->update(['prioritas' => $row['prioritas']]);
-            }
-        }
-
-        // Proses predecessors untuk semua node
+        // Perbarui predecessors
         foreach ($data as $row) {
             $nodeId = !empty($row['id']) ? $row['id'] : ($newIdsMap[$row['prioritas']] ?? null);
-
             if (!$nodeId) continue;
 
-            // Hapus semua predecessors yang ada
             Predecessor::where('node_core', $nodeId)->delete();
 
-            // Tambahkan predecessors baru
             if (!empty($row['syarat'])) {
                 foreach ($row['syarat'] as $cabangId) {
                     Predecessor::create([
