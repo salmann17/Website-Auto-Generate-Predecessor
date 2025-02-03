@@ -13,10 +13,10 @@ Route::get('/view-project', [ProjectController::class, 'index'])->name('view-pro
 Route::get('/detail-cpm', function () {
     return view('detail-cpm');
 });
-// Route::get('/detail-cpm/{id}', [NodeController::class, 'show'])->name('detail-cpm');
 Route::get('/detail-cpm/{id}', [NodeController::class, 'show'])->name('nodes.show');
 Route::post('/run-python', [NodeController::class, 'runPython']);
 Route::post('/update-nodes', [NodeController::class, 'updateNodes']);
+Route::post('/delete-node', [NodeController::class, 'deleteNode']);
 
 
 

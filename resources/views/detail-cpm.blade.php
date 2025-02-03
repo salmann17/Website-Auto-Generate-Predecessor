@@ -66,13 +66,12 @@
                 const activity = row.querySelector('input[name="activity[]"]')?.value || row.cells[0].textContent.trim();
                 const durasi = row.querySelector('input[name="durasi[]"]')?.value || row.cells[1].textContent.trim();
 
-                // Ambil syarat dari dropdown
                 const syarat = Array.from(row.querySelectorAll('.dropdown-container select'))
                     .map(select => {
                         const selectedOption = select.options[select.selectedIndex];
-                        return selectedOption.value; // Ambil value (ID) dari option yang dipilih
+                        return selectedOption.value; 
                     })
-                    .filter(value => value !== ""); // Hapus nilai kosong
+                    .filter(value => value !== ""); 
 
                 data.push({
                     id: id,
@@ -119,9 +118,8 @@
         function processTasks() {
             const tasks = {};
             const rows = document.querySelectorAll('tbody tr');
-            const idToActivity = {}; // Mapping ID ke nama aktivitas
+            const idToActivity = {}; 
 
-            // Bangun mapping ID ke Activity
             rows.forEach(row => {
                 const id = row.dataset.id;
                 const activity = row.cells[0].textContent.trim();
@@ -130,18 +128,16 @@
                 }
             });
 
-            // Loop melalui setiap baris untuk menyusun data tugas
             rows.forEach(row => {
                 const activity = row.cells[0].textContent.trim();
                 const durasi = parseInt(row.cells[1].textContent.trim(), 10);
 
-                // Ambil syarat berdasarkan activity, bukan prioritas
                 const syarat = Array.from(row.cells[2].querySelectorAll('select'))
                     .map(select => {
                         const selectedOption = select.options[select.selectedIndex];
-                        return idToActivity[selectedOption.value] || ""; // Ambil activity berdasarkan ID
+                        return idToActivity[selectedOption.value] || ""; 
                     })
-                    .filter(value => value !== ""); // Hapus nilai kosong
+                    .filter(value => value !== ""); 
 
                 tasks[activity] = {
                     nama: activity,
@@ -150,7 +146,6 @@
                 };
             });
 
-            // Tampilkan pesan sukses dan debug data
             Swal.fire({
                 title: "CPM berhasil dibuat!",
                 text: "Silahkan tunggu hingga gambar muncul",
@@ -161,7 +156,6 @@
 
             console.log("📤 Data dikirim ke Flask:", JSON.stringify(tasks, null, 2));
 
-            // Kirim data ke backend Flask
             $.ajax({
                 url: 'http://localhost:5000/run-cpm',
                 type: 'POST',
@@ -207,35 +201,30 @@
             const tbody = currentRow.closest('tbody');
             const allRows = Array.from(tbody.querySelectorAll('tr'));
 
-            // Dapatkan prioritas saat ini dan baris di mana kita menyisipkan baris baru
             const currentPrioritas = parseInt(currentRow.dataset.prioritas);
             const newRow = currentRow.cloneNode(true);
 
-            // Reset ID agar tidak duplikat
             newRow.dataset.id = '';
-            newRow.dataset.prioritas = currentPrioritas + 1; // Atur prioritas baru
+            newRow.dataset.prioritas = currentPrioritas + 1; 
             newRow.querySelector('input[name="activity[]"]').value = "New Activity";
             newRow.querySelector('input[name="durasi[]"]').value = "0";
 
-            // Reset dropdown container
             const dropdownContainer = newRow.querySelector('.dropdown-container');
             dropdownContainer.innerHTML = `
-        <div class="my-2">
-            <select class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
-                <option value="">-</option>
-                @foreach($nodes as $node)
-                <option value="{{$node->id}}" data-prioritas="{{$node->prioritas}}">{{$node->activity}}</option>
-                @endforeach
-            </select>
-            <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
-            <button type="button" onclick="removeDropdown(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button>
-        </div>
-    `;
+                <div class="my-2">
+                    <select class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
+                        <option value="">-</option>
+                        @foreach($nodes as $node)
+                        <option value="{{$node->id}}" data-prioritas="{{$node->prioritas}}">{{$node->activity}}</option>
+                        @endforeach
+                    </select>
+                    <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
+                    <button type="button" onclick="removeDropdown(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button>
+                </div>
+            `;
 
-            // Sisipkan baris baru setelah baris saat ini
             currentRow.insertAdjacentElement('afterend', newRow);
 
-            // Update semua prioritas setelah baris yang baru ditambahkan
             let newPrioritas = currentPrioritas + 1;
             allRows.forEach(row => {
                 let rowPrioritas = parseInt(row.dataset.prioritas);
@@ -244,28 +233,81 @@
                 }
             });
 
-            // Debugging console log
             console.log("Prioritas diperbarui:", Array.from(tbody.querySelectorAll('tr')).map(row => row.dataset.prioritas));
         }
 
 
         function removeRow(button) {
             const currentRow = button.closest('tr');
-            const tbody = currentRow.closest('tbody');
+            const currentId = currentRow.dataset.id;
             const currentPrioritas = parseInt(currentRow.dataset.prioritas);
 
-            // Hapus baris
-            currentRow.remove();
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Data yang dihapus tidak dapat dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Hapus!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/delete-node',
+                        method: 'POST',
+                        data: {
+                            id: currentId,
+                            prioritas: currentPrioritas,
+                            _token: $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function(response) {
+                            currentRow.remove();
 
-            // Update prioritas setelah penghapusan
-            let newPrioritas = 1;
-            Array.from(tbody.querySelectorAll('tr')).forEach(row => {
-                row.dataset.prioritas = newPrioritas++;
+                            const tbody = document.querySelector('tbody');
+                            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                            rows.forEach(row => {
+                                const rowPrioritas = parseInt(row.dataset.prioritas);
+                                if (rowPrioritas > currentPrioritas) {
+                                    row.dataset.prioritas = rowPrioritas - 1;
+                                }
+                            });
+
+                            rows.forEach(row => {
+                                const selects = row.querySelectorAll('.dropdown-container select');
+                                selects.forEach(select => {
+                                    const selectedValue = select.value;
+                                    if (selectedValue === currentId) {
+                                        if (select.options.length > 1) {
+                                            select.selectedIndex = 0; 
+                                        }
+                                    }
+                                });
+                            });
+
+                            rows.sort((a, b) => {
+                                return parseInt(a.dataset.prioritas) - parseInt(b.dataset.prioritas);
+                            });
+
+                            tbody.innerHTML = '';
+                            rows.forEach(row => tbody.appendChild(row));
+
+                            Swal.fire(
+                                'Terhapus!',
+                                'Data berhasil dihapus.',
+                                'success'
+                            );
+                        },
+                        error: function(xhr) {
+                            Swal.fire(
+                                'Gagal!',
+                                'Terjadi kesalahan saat menghapus data.',
+                                'error'
+                            );
+                        }
+                    });
+                }
             });
-
-            // Debugging console log
-            console.log("Prioritas diperbarui setelah penghapusan:",
-                Array.from(tbody.querySelectorAll('tr')).map(row => row.dataset.prioritas));
         }
     </script>
 </head>

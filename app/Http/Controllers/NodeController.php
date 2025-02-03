@@ -55,14 +55,12 @@ class NodeController extends Controller
     {
         $data = $request->input('data');
 
-        // Urutkan data berdasarkan prioritas agar disimpan dengan urutan yang benar
         usort($data, function ($a, $b) {
             return $a['prioritas'] - $b['prioritas'];
         });
 
         $newIdsMap = [];
 
-        // Perbarui node yang sudah ada
         foreach ($data as $row) {
             if (!empty($row['id'])) {
                 $node = Node::find($row['id']);
@@ -76,7 +74,6 @@ class NodeController extends Controller
             }
         }
 
-        // Simpan node baru (yang belum memiliki ID)
         foreach ($data as $row) {
             if (empty($row['id'])) {
                 $newNode = Node::create([
@@ -89,7 +86,6 @@ class NodeController extends Controller
             }
         }
 
-        // Perbarui predecessors
         foreach ($data as $row) {
             $nodeId = !empty($row['id']) ? $row['id'] : ($newIdsMap[$row['prioritas']] ?? null);
             if (!$nodeId) continue;
@@ -107,5 +103,37 @@ class NodeController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    public function deleteNode(Request $request)
+    {
+        try {
+            $id = $request->input('id');
+            $prioritas = $request->input('prioritas');
+
+            $affectedPredecessors = Predecessor::where('node_core', $id)->get();
+
+            Node::where('id', $id)->delete();
+
+            Node::where('prioritas', '>', $prioritas)
+                ->decrement('prioritas');
+
+            foreach ($affectedPredecessors as $predecessor) {
+                $existingDependencies = Predecessor::where('node_cabang', $predecessor->node_cabang)
+                    ->where('node_core', '!=', $id)
+                    ->exists();
+
+                if (!$existingDependencies) {
+                    Predecessor::where('node_core', $id)->delete();
+                }
+            }
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }
