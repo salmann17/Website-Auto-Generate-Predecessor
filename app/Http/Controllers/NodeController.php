@@ -17,7 +17,7 @@ class NodeController extends Controller
     public function show($id)
     {
         $project = Project::findOrFail($id);
-        $nodes = Node::where('project_idproject', $id)->orderBy('prioritas','asc')->get();;
+        $nodes = Node::where('project_idproject', $id)->orderBy('prioritas', 'asc')->get();;
         $predecessors = Predecessor::with('nodeCore', 'nodeCabang')
             ->whereHas('nodeCore', function ($query) use ($id) {
                 $query->where('project_idproject', $id);
@@ -54,44 +54,62 @@ class NodeController extends Controller
     public function updateNodes(Request $request)
     {
         $data = $request->input('data');
+        $newIdsMap = []; // Untuk mapping prioritas sementara ke ID baru
 
+        // Proses semua node yang sudah ada
         foreach ($data as $row) {
-            $node = Node::find($row['id']);
-            if ($node) {
-                $node->activity = $row['activity'];
-                $node->durasi = $row['durasi'];
-                $node->save();
-            }
-
-            if (empty($row['syarat'])) {
-                Predecessor::where('node_core', $row['id'])->delete();
-            } else {
-                $newPredecessors = [];
-                foreach ($row['syarat'] as $nodeCabangId) {
-                    if (is_numeric($nodeCabangId)) { 
-                        $newPredecessors[] = $nodeCabangId;
-                    }
-                }
-
-                Predecessor::where('node_core', $row['id'])
-                    ->whereNotIn('node_cabang', $newPredecessors)
-                    ->delete();
-
-                foreach ($newPredecessors as $newNodeCabang) {
-                    $existing = Predecessor::where('node_core', $row['id'])
-                        ->where('node_cabang', $newNodeCabang)
-                        ->exists();
-                    if (!$existing) {
-                        Predecessor::create([
-                            'node_core' => $row['id'],
-                            'node_cabang' => $newNodeCabang
-                        ]);
-                    }
+            if (!empty($row['id'])) {
+                $node = Node::find($row['id']);
+                if ($node) {
+                    $node->update([
+                        'activity' => $row['activity'],
+                        'durasi' => $row['durasi'],
+                        'prioritas' => $row['prioritas']
+                    ]);
                 }
             }
         }
 
-        return redirect()->route('nodes.show', ['id' => $data[0]['id']])
-            ->with('success', 'Data updated successfully!');
+        // Proses node baru (yang belum punya ID)
+        foreach ($data as $row) {
+            if (empty($row['id'])) {
+                $newNode = Node::create([
+                    'activity' => $row['activity'],
+                    'durasi' => $row['durasi'],
+                    'prioritas' => $row['prioritas'],
+                    'project_idproject' => $row['project_idproject'] 
+                ]);
+                $newIdsMap[$row['prioritas']] = $newNode->id;
+            }
+        }
+
+        // Update semua node untuk prioritas yang berubah
+        foreach ($data as $row) {
+            if (!empty($row['id'])) {
+                Node::where('id', $row['id'])->update(['prioritas' => $row['prioritas']]);
+            }
+        }
+
+        // Proses predecessors untuk semua node
+        foreach ($data as $row) {
+            $nodeId = !empty($row['id']) ? $row['id'] : ($newIdsMap[$row['prioritas']] ?? null);
+
+            if (!$nodeId) continue;
+
+            // Hapus semua predecessors yang ada
+            Predecessor::where('node_core', $nodeId)->delete();
+
+            // Tambahkan predecessors baru
+            if (!empty($row['syarat'])) {
+                foreach ($row['syarat'] as $cabangId) {
+                    Predecessor::create([
+                        'node_core' => $nodeId,
+                        'node_cabang' => $cabangId
+                    ]);
+                }
+            }
+        }
+
+        return response()->json(['success' => true]);
     }
 }

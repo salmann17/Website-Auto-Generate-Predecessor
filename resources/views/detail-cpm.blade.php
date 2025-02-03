@@ -58,22 +58,29 @@
         function saveRows() {
             const rows = document.querySelectorAll('tbody tr');
             const data = [];
+            const projectId = document.getElementById('project_id').value;
 
             rows.forEach(row => {
-                const id = row.querySelector('input[name="id[]"]').value;
-                const activity = row.querySelector('input[name="activity[]"]').value;
-                const durasi = row.querySelector('input[name="durasi[]"]').value;
+                const id = row.dataset.id || null;
+                const prioritas = parseInt(row.dataset.prioritas);
+                const activity = row.querySelector('input[name="activity[]"]')?.value || row.cells[0].textContent.trim();
+                const durasi = row.querySelector('input[name="durasi[]"]')?.value || row.cells[1].textContent.trim();
 
+                // Ambil syarat dari dropdown
                 const syarat = Array.from(row.querySelectorAll('.dropdown-container select'))
-                    .map(select => select.value.trim())
-                    .filter(value => value !== "null" && value !== "" && !isNaN(value));
-
+                    .map(select => {
+                        const selectedOption = select.options[select.selectedIndex];
+                        return selectedOption.value; // Ambil value (ID) dari option yang dipilih
+                    })
+                    .filter(value => value !== ""); // Hapus nilai kosong
 
                 data.push({
                     id: id,
+                    prioritas: prioritas,
                     activity: activity,
                     durasi: durasi,
-                    syarat: syarat
+                    syarat: syarat,
+                    project_idproject: projectId
                 });
             });
 
@@ -112,27 +119,27 @@
         function processTasks() {
             const tasks = {};
             const rows = document.querySelectorAll('tbody tr');
-            const idToActivity = {};
-            document.querySelectorAll('tbody tr').forEach(row => {
-                const id = row.getAttribute('data-id');
-                const activity = row.cells[0].textContent.trim();
+            const idToPrioritas = {};
+
+            // Bangun mapping ID ke Prioritas
+            rows.forEach(row => {
+                const id = row.dataset.id;
                 if (id) {
-                    idToActivity[id] = activity;
+                    idToPrioritas[id] = row.dataset.prioritas;
                 }
             });
 
-
-            rows.forEach((row, index) => {
+            rows.forEach(row => {
                 const activity = row.cells[0].textContent.trim();
                 const durasi = parseInt(row.cells[1].textContent.trim(), 10);
                 const syarat = Array.from(row.cells[2].querySelectorAll('select'))
-                    .map(select => idToActivity[select.value.trim()] || "")
-                    .filter(value => value !== "null" && value !== "" && value !== "index");
+                    .map(select => idToPrioritas[select.value.trim()] || "")
+                    .filter(value => value !== "");
 
                 tasks[activity] = {
                     nama: activity,
                     durasi: durasi,
-                    syarat: syarat.length > 0 ? syarat : []
+                    syarat: syarat
                 };
             });
             Swal.fire({
@@ -183,6 +190,73 @@
                 }
             });
         }
+
+        function addRow(button) {
+            const currentRow = button.closest('tr');
+            const currentPrioritas = parseInt(currentRow.dataset.prioritas);
+            const newPrioritas = currentPrioritas + 1;
+
+            // Clone row
+            const newRow = currentRow.cloneNode(true);
+            newRow.dataset.id = '';
+            newRow.dataset.prioritas = newPrioritas;
+
+            // Reset nilai
+            const cells = newRow.cells;
+            cells[0].innerHTML = `
+                <input type="hidden" name="id[]" value="">
+                <input type="text" name="activity[]" value="new activity" 
+                    class="bg-gray-600 text-white rounded-md p-1 w-62 h-10">
+            `;
+            cells[1].innerHTML = `
+                <input type="number" name="durasi[]" value="0" 
+                    class="bg-gray-600 text-white rounded-md p-1 w-10 h-10">
+            `;
+
+            // Reset dropdown
+            const dropdownContainer = cells[2].querySelector('.dropdown-container');
+            dropdownContainer.innerHTML = `
+                <div class="my-2">
+                    <select class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
+                        <option value="">-</option>
+                        @foreach($nodes as $node)
+                        <option value="{{$node->id}}" data-prioritas="{{$node->prioritas}}">
+                            {{$node->activity}}
+                        </option>
+                        @endforeach
+                    </select>
+                    <button type="button" onclick="addDropdown(this)" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
+                    <button type="button" onclick="removeDropdown(this)" 
+                            class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button>
+                </div>
+            `;
+
+            // Update prioritas rows setelahnya
+            currentRow.insertAdjacentElement('afterend', newRow);
+            const allRows = document.querySelectorAll('tbody tr');
+            allRows.forEach(row => {
+                const rowPrioritas = parseInt(row.dataset.prioritas);
+                if (rowPrioritas >= newPrioritas && row !== newRow) {
+                    row.dataset.prioritas = rowPrioritas + 1;
+                }
+            });
+        }
+
+        function removeRow(button) {
+            const currentRow = button.closest('tr');
+            const currentPrioritas = parseInt(currentRow.dataset.prioritas);
+
+            // Update prioritas rows setelahnya
+            currentRow.remove();
+            const allRows = document.querySelectorAll('tbody tr');
+            allRows.forEach(row => {
+                const rowPrioritas = parseInt(row.dataset.prioritas);
+                if (rowPrioritas > currentPrioritas) {
+                    row.dataset.prioritas = rowPrioritas - 1;
+                }
+            });
+        }
     </script>
 </head>
 
@@ -194,8 +268,8 @@
             <div class="flex justify-end" style="gap: 10px">
                 <button onclick="saveRows()" id="save-button" class="save-row bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">Save</button>
                 <button onclick="editRows()" id="edit-button" class="edit-row bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded-md">Edit</button>
-
             </div>
+            <input type="hidden" id="project_id" value="{{ $project->id }}">
             <table class="w-full text-white border-separate border-spacing-2">
                 <thead>
                     <tr class="bg-gray-700">
@@ -207,7 +281,7 @@
                 </thead>
                 <tbody>
                     @foreach ($nodes as $node)
-                    <tr class="bg-gray-800" data-id="{{ $node->id }}">
+                    <tr class="bg-gray-800" data-prioritas="{{ $node->prioritas }}" data-id="{{$node->id}}">
                         <td class="p-2"> {{ $node->activity }}</td>
                         <td class="p-2">{{ $node->durasi }}</td>
                         <td class="p-2">
@@ -225,7 +299,7 @@
                                     </option>
                                     <option value="">-</option>
                                     @foreach($nodes as $node)
-                                    <option value="{{$node->id}}">{{$node->activity}}</option>
+                                    <option value="{{$node->id}}" data-prioritas="{{$node->prioritas}}">{{$node->activity}}</option>
                                     @endforeach
                                     @endif
                                 </select>
@@ -247,8 +321,8 @@
                             @endif
                         </td>
                         <td class="p-2">
-                            <button class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">+</button>
-                            <button class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md">-</button>
+                            <button onclick="addRow(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">+</button>
+                            <button onclick="removeRow(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md">-</button>
                         </td>
                     </tr>
                     @endforeach

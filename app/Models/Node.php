@@ -9,13 +9,14 @@ class Node extends Model
 {
     use HasFactory;
 
-    protected $tabe = 'nodes';
+    protected $table = 'nodes';
     protected $primaryKey = 'id';
-    protected $fillabel = [
+    protected $fillable = [
         'id',
-        'project_idproject',
         'activity',
         'durasi',
+        'prioritas',
+        'project_idproject',
     ];
 
     public function project()
