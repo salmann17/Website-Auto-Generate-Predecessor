@@ -326,7 +326,7 @@
                 <thead>
                     <tr class="bg-gray-700">
                         <th class="p-2 border-b">Activity</th>
-                        <th class="p-2 border-b">Durasi</th>
+                        <th class="p-2 border-b">Durasi (minggu)</th>
                         <th class="p-2 border-b">Syarat</th>
                         <th class="p-2 border-b">Aksi</th>
                     </tr>

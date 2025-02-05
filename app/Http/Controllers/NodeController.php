@@ -136,4 +136,9 @@ class NodeController extends Controller
             ], 500);
         }
     }
+
+    public function index()
+    {
+        return view('create-project');
+    }
 }

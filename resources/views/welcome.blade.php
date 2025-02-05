@@ -18,9 +18,11 @@
             <p class="text-lg mb-8 font-inter">Membantu Anda memprediksi CPM dengan AI!</p>
 
             <div class="space-x-4">
-                <button class="px-8 py-3 bg-green-600 text-white rounded-full shadow-lg transition duration-300 hover:bg-green-700 font-inter">
-                    Create Project
-                </button>
+                <a href="{{ route('create-project') }}">
+                    <button class="px-8 py-3 bg-green-600 text-white rounded-full shadow-lg transition duration-300 hover:bg-green-700 font-inter">
+                        Create Project
+                    </button>
+                </a>
                 <a href="{{ route('view-project') }}">
                     <button class="px-8 py-3 bg-blue-600 text-white rounded-full shadow-lg transition duration-300 hover:bg-blue-700 font-inter">
                         View Project

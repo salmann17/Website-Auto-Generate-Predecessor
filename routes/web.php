@@ -17,6 +17,7 @@ Route::get('/detail-cpm/{id}', [NodeController::class, 'show'])->name('nodes.sho
 Route::post('/run-python', [NodeController::class, 'runPython']);
 Route::post('/update-nodes', [NodeController::class, 'updateNodes']);
 Route::post('/delete-node', [NodeController::class, 'deleteNode']);
+Route::get('/create-project', [NodeController::class, 'index'])->name('create-project');
 
 
 
