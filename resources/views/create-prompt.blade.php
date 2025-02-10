@@ -22,13 +22,15 @@
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({ prompt: message })
+                    body: JSON.stringify({
+                        prompt: message
+                    })
                 });
 
                 if (!response.ok) throw new Error('Gagal memproses');
-                
+
                 const data = await response.json();
-                
+
                 const tableHTML = generateTableHTML(data.data);
                 const saveButton = `<button onclick="saveData(${JSON.stringify(data.data)})" 
                                 class="mt-4 bg-green-500 text-white p-2 rounded-lg">
@@ -45,24 +47,34 @@
         }
 
         function generateTableHTML(data) {
+            const filteredData = data.map(item => ({
+                Activity: item.Activity,
+                Duration: item.Duration,
+                Predecessors: item.Predecessors
+            }));
+
             return `
-                <div class="overflow-x-auto">
-                    <table class="min-w-full bg-gray-700 text-white">
-                        <thead>
-                            <tr>
-                                ${Object.keys(data[0]).map(col => `<th class="px-4 py-2 border">${col}</th>`).join('')}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.map(row => `
-                                <tr>
-                                    ${Object.values(row).map(val => `<td class="px-4 py-2 border">${val}</td>`).join('')}
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-gray-700 text-white">
+                <thead>
+                    <tr>
+                        ${['Activity', 'Duration', 'Predecessors'].map(col => 
+                            `<th class="px-4 py-2 border">${col}</th>`
+                        ).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filteredData.map(row => `
+                        <tr>
+                            <td class="px-4 py-2 border">${row.Activity}</td>
+                            <td class="px-4 py-2 border">${row.Duration}</td>
+                            <td class="px-4 py-2 border">${row.Predecessors}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
         }
 
         function saveData(tableData) {
@@ -119,4 +131,5 @@
         </div>
     </div>
 </body>
+
 </html>

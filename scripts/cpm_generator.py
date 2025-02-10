@@ -9,7 +9,11 @@ import pandas as pd
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}) 
-
+class ActivityItem(BaseModel):
+    ID: str = Field(description="ID of the Activity")
+    Activity: str = Field(description="Name of the Activity")
+    Duration: str = Field(description="Duration of the Activity")
+    Predecessors: str = Field(description="Predecessors of the Activity")
 class CPM(BaseModel):
     items: list = Field(description="List of activities")
 
@@ -17,11 +21,15 @@ parser = JsonOutputParser(pydantic_object=CPM)
 llm = ChatGoogleGenerativeAI(
     model="gemini-1.5-flash",
     api_key="AIzaSyAnQXK-QcMWawunnxQ92kfELdT4NDzZIGc",
-    temperature=0.7
+    temperature=0.3
 )
 
 prompt = PromptTemplate(
-    template="""Buat tabel CPM untuk proyek berikut:
+    template="""Buat tabel CPM untuk proyek berikut dengan kolom:
+    - Activity (Nama Aktivitas)
+    - Duration (Durasi)
+    - Predecessors (Pendahulu)
+    
     {format_instructions}
     
     Deskripsi Proyek:
