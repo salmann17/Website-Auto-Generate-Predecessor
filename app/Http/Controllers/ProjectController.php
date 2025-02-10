@@ -29,7 +29,20 @@ class ProjectController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'nama' => 'required|string|max:255',
+            'alamat' => 'required|string|max:255',
+            'deskripsi' => 'required|string',
+        ]);
+
+        $project = Project::create([
+            'nama' => $request->nama,
+            'alamat' => $request->alamat,
+            'deskripsi' => $request->deskripsi,
+        ]);
+
+        return view('create-prompt', ['id' => $project->id, 'nama' => $project->nama])
+            ->with('success', 'Project berhasil ditambahkan!');
     }
 
     /**
@@ -62,5 +75,17 @@ class ProjectController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function createPrompt($id)
+    {
+        $project = Project::findOrFail($id);
+        return view('create-project', compact('project'));
+    }
+
+    public function showProject()
+    {
+        $project = Project::all();
+        return view('create-project', compact('project'));
     }
 }
