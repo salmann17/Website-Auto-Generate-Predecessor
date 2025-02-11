@@ -12,7 +12,6 @@ class Node extends Model
     protected $table = 'nodes';
     protected $primaryKey = 'id';
     protected $fillable = [
-        'id',
         'activity',
         'durasi',
         'prioritas',

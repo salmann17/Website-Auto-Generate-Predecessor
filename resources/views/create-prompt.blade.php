@@ -7,8 +7,18 @@
     <title>Create Project</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <script>
         async function sendMessage() {
+            Swal.fire({
+                title: 'Menyimpan Data...',
+                text: 'Harap tunggu',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             const input = document.getElementById("chat-input");
             const message = input.value.trim();
 
@@ -30,12 +40,12 @@
                 if (!response.ok) throw new Error('Gagal memproses');
 
                 const data = await response.json();
+                console.log("Data diterima:", data.data);
 
                 const tableHTML = generateTableHTML(data.data);
-                const saveButton = `<button onclick="saveData(${JSON.stringify(data.data)})" 
-                                class="mt-4 bg-green-500 text-white p-2 rounded-lg">
-                                Save Data</button>`;
-                addMessage(tableHTML + saveButton, 'bot');
+                addMessage(tableHTML, 'bot');
+
+                await saveData(data.data);
 
             } catch (error) {
                 console.error(error);
@@ -46,12 +56,54 @@
             adjustHeight(input);
         }
 
+        async function saveData(tableData) {
+            console.log("Menyimpan data:", tableData);
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const projectId = document.getElementById("project-id").value;
+                const payload = {
+                    project_id: projectId, 
+                    nodes: tableData 
+                };
+                const response = await $.ajax({
+                    url: '/saveNodes',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(payload),
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
+
+                console.log("Data berhasil disimpan:", response);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Sukses!',
+                    text: response.message
+                });
+
+            } catch (xhr) {
+                console.error("Error menyimpan data:", xhr);
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    text: xhr.responseJSON?.message || 'Terjadi kesalahan saat menyimpan data'
+                });
+            }
+        }
+
+
+
         function generateTableHTML(data) {
             const filteredData = data.map(item => ({
                 Activity: item.Activity,
                 Duration: item.Duration,
                 Predecessors: item.Predecessors
             }));
+            console.log(data.data);
 
             return `
         <div class="overflow-x-auto">
@@ -75,21 +127,6 @@
             </table>
         </div>
     `;
-        }
-
-        function saveData(tableData) {
-            fetch('/save', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(tableData)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                })
-                .catch(console.error);
         }
 
         function addMessage(content, sender) {
@@ -128,6 +165,7 @@
                 class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
                 Kirim
             </button>
+            <input type="hidden" id="project-id" value="{{ $id }}">
         </div>
     </div>
 </body>

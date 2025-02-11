@@ -40,28 +40,6 @@ prompt = PromptTemplate(
 
 chain = prompt | llm | parser
 
-def init_db():
-    conn = sqlite3.connect('web-cpm.db')
-    c = conn.cursor()
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS nodes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                activity TEXT,
-                durasi TEXT,
-                prioritas INTEGER)''')
-                
-    c.execute('''CREATE TABLE IF NOT EXISTS predecessors (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                node_core INTEGER,
-                node_cabang INTEGER,
-                FOREIGN KEY(node_core) REFERENCES nodes(id),
-                FOREIGN KEY(node_cabang) REFERENCES nodes(id))''')
-    
-    conn.commit()
-    conn.close()
-
-init_db()
-
 @app.route('/process', methods=['POST'])
 def process_prompt():
     try:
@@ -79,40 +57,6 @@ def process_prompt():
         
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
-
-@app.route('/save', methods=['POST'])
-def save():
-    try:
-        data = request.json
-        conn = sqlite3.connect('web-cpm.db')  
-        c = conn.cursor()
-        
-        node_ids = {}
-        for idx, item in enumerate(data, 1):
-            c.execute('''INSERT INTO nodes (activity, durasi, prioritas)
-                      VALUES (?, ?, ?)''',
-                      (item['Activity'], item['Duration'], idx))
-            node_ids[item['ID']] = c.lastrowid
-        
-        for item in data:
-            core_id = node_ids[item['ID']]
-            predecessors = item['Predecessors'].split(',') if item['Predecessors'] else []
-            
-            for pred in predecessors:
-                pred = pred.strip()
-                if pred in node_ids:
-                    c.execute('''INSERT INTO predecessors (node_core, node_cabang)
-                              VALUES (?, ?)''',
-                              (core_id, node_ids[pred]))
-        
-        conn.commit()
-        return jsonify({"message": "Data berhasil disimpan!"})
-    
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

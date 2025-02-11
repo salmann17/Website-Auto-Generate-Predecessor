@@ -15,6 +15,7 @@ class Project extends Model
         'nama',
         'alamat',
         'deskripsi',
+        
     ];
 
     public function nodes()

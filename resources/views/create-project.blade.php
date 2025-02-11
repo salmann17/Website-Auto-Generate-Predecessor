@@ -8,6 +8,7 @@
     <link href="{{ mix('css/app.css') }}" rel="stylesheet">
     @vite('resources/css/app.css')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body class="bg-gradient-to-tl from-black via-gray-900 to-blue-900 dark:from-black dark:via-gray-900 dark:to-blue-900 transition-all duration-500 font-inter">
@@ -20,17 +21,17 @@
                 @csrf
                 <div class="mb-4">
                     <label for="nama" class="block text-sm font-medium">Nama Project</label>
-                    <input type="text" name="nama" class="w-full p-2 rounded-full bg-gray-700 border border-gray-600 focus:outline-none focus:ring focus:ring-blue-500">
+                    <input type="text" name="nama" class="w-full p-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring focus:ring-blue-500">
                 </div>
                 <div class="mb-4">
                     <label for="alamat" class="block text-sm font-medium">Alamat</label>
-                    <input type="text" name="alamat" class="w-full p-2 rounded-full bg-gray-700 border border-gray-600 focus:outline-none focus:ring focus:ring-blue-500">
+                    <input type="text" name="alamat" class="w-full p-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring focus:ring-blue-500">
                 </div>
                 <div class="mb-4">
                     <label for="deskripsi" class="block text-sm font-medium">Deskripsi</label>
-                    <textarea name="deskripsi" rows="3" class="w-full p-2 rounded-full bg-gray-700 border border-gray-600 focus:outline-none focus:ring focus:ring-blue-500"></textarea>
+                    <textarea name="deskripsi" rows="3" class="w-full p-2 rounded-xl bg-gray-700 border border-gray-600 focus:outline-none focus:ring focus:ring-blue-500"></textarea>
                 </div>
-                <button type="submit" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-full text-white font-bold">
+                <button onclick="alert()" type="submit" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-full text-white font-bold">
                     Tambah Project
                 </button>
             </form>
@@ -39,9 +40,9 @@
     </div>
 
 </body>
-@if(session('success'))
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    function alert(){
         Swal.fire({
             title: "Success!",
             text: "{{ session('success') }}",
@@ -49,8 +50,8 @@
             confirmButtonColor: "#3085d6",
             confirmButtonText: "OK"
         });
-    });
+    }
 </script>
-@endif
+
 
 </html>
