@@ -385,10 +385,12 @@
             </div>
         </div>
 
-        <div class="w-full md:w-3/5 p-4 bg-gray-700 rounded-lg shadow-lg ">
+        <div class="w-full md:w-2/5 p-4 bg-gray-700 rounded-lg shadow-lg ">
             <div id="cy" class="w-full h-[70vh] mt-6 bg-gray-800 border-2 border-gray-600"
                 style="overflow: hidden; cursor: grab;">
-            </div>
+            </div> <br>
+            <input class="w-25" type="number" name="" id="">
+            <button class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">Edit Size</button>
         </div>
     </div>
 </body>

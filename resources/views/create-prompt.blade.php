@@ -9,6 +9,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script>
         async function sendMessage() {
             Swal.fire({
@@ -163,8 +164,9 @@
             <button
                 onclick="sendMessage()"
                 class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
-                Kirim
+                <i class="fa-solid fa-paper-plane"></i>
             </button>
+            <a href="{{ url('/detail-cpm', $id) }}" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition"><i class="fa-solid fa-pen"></i></a>
             <input type="hidden" id="project-id" value="{{ $id }}">
         </div>
     </div>
