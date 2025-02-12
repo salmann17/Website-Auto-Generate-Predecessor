@@ -16,9 +16,9 @@ def run_cpm():
         figsize_input = data.get('figsize', 10)
         
         if figsize_input <= 10:
-            scale = 0.3
-        elif figsize_input <= 20:
             scale = 1
+        elif figsize_input <= 20:
+            scale = 2
         elif figsize_input <= 30:
             scale = 3
         elif figsize_input <= 40:

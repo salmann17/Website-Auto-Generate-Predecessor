@@ -148,11 +148,12 @@
             });
 
             Swal.fire({
-                title: "CPM berhasil dibuat!",
-                text: "Silahkan tunggu hingga gambar muncul",
-                icon: "success",
-                confirmButtonText: "OK",
-                timer: 3000
+                title: 'Memproses Gambar CPM...',
+                text: 'Harap tunggu',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
             });
 
             console.log("📤 Data dikirim ke Flask:", JSON.stringify(tasks, null, 2));
@@ -167,6 +168,13 @@
                 }),
                 success: function(response) {
                     console.log('✅ Data processed successfully', response);
+                    Swal.fire({
+                        title: "CPM berhasil dibuat!",
+                        text: "Silahkan tunggu hingga gambar muncul",
+                        icon: "success",
+                        confirmButtonText: "OK",
+                        timer: 3000
+                    });
                     const container = document.getElementById('cy');
                     container.innerHTML = `
                 <div class="panzoom-container" style="overflow: hidden; width: 100%; height: 100%;">
