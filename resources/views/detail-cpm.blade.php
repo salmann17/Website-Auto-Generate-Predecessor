@@ -69,9 +69,9 @@
                 const syarat = Array.from(row.querySelectorAll('.dropdown-container select'))
                     .map(select => {
                         const selectedOption = select.options[select.selectedIndex];
-                        return selectedOption.value; 
+                        return selectedOption.value;
                     })
-                    .filter(value => value !== ""); 
+                    .filter(value => value !== "");
 
                 data.push({
                     id: id,
@@ -118,7 +118,8 @@
         function processTasks() {
             const tasks = {};
             const rows = document.querySelectorAll('tbody tr');
-            const idToActivity = {}; 
+            const idToActivity = {};
+            const figsize = parseInt(document.getElementById('figsize-input').value) || 10;
 
             rows.forEach(row => {
                 const id = row.dataset.id;
@@ -135,9 +136,9 @@
                 const syarat = Array.from(row.cells[2].querySelectorAll('select'))
                     .map(select => {
                         const selectedOption = select.options[select.selectedIndex];
-                        return idToActivity[selectedOption.value] || ""; 
+                        return idToActivity[selectedOption.value] || "";
                     })
-                    .filter(value => value !== ""); 
+                    .filter(value => value !== "");
 
                 tasks[activity] = {
                     nama: activity,
@@ -160,7 +161,10 @@
                 url: 'http://localhost:5000/run-cpm',
                 type: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify(tasks),
+                data: JSON.stringify({
+                    tasks: tasks,
+                    figsize: figsize
+                }),
                 success: function(response) {
                     console.log('✅ Data processed successfully', response);
                     const container = document.getElementById('cy');
@@ -205,7 +209,7 @@
             const newRow = currentRow.cloneNode(true);
 
             newRow.dataset.id = '';
-            newRow.dataset.prioritas = currentPrioritas + 1; 
+            newRow.dataset.prioritas = currentPrioritas + 1;
             newRow.querySelector('input[name="activity[]"]').value = "New Activity";
             newRow.querySelector('input[name="durasi[]"]').value = "0";
 
@@ -279,7 +283,7 @@
                                     const selectedValue = select.value;
                                     if (selectedValue === currentId) {
                                         if (select.options.length > 1) {
-                                            select.selectedIndex = 0; 
+                                            select.selectedIndex = 0;
                                         }
                                     }
                                 });
@@ -356,7 +360,6 @@
                                     @endif
                                 </select>
                                 <button id="add-dropdown-btn" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
-                                <!-- <button id="remove-dropdown-btn" onclick="removeDropdown(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button> -->
                             </div>
                             @endforeach
                             @else
@@ -368,7 +371,6 @@
                                     @endforeach
                                 </select>
                                 <button id="add-dropdown-btn" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
-                                <!-- <button id="remove-dropdown-btn" onclick="removeDropdown(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button> -->
                             </div>
                             @endif
                         </td>
@@ -389,8 +391,10 @@
             <div id="cy" class="w-full h-[70vh] mt-6 bg-gray-800 border-2 border-gray-600"
                 style="overflow: hidden; cursor: grab;">
             </div> <br>
-            <input class="w-25" type="number" name="" id="">
-            <button class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">Edit Size</button>
+            <div class="flex items-center gap-2">
+                <input class="w-25 bg-gray-600 text-white rounded-md p-1" type="number" name="figsize" id="figsize-input" min="1" value="50">
+                <button onclick="processTasks()" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">Apply Size</button>
+            </div>
         </div>
     </div>
 </body>

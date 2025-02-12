@@ -12,11 +12,34 @@ def run_cpm():
     try:
         data = request.get_json()
         print("\U0001F4E9 Data diterima dari Laravel:", data)
+        tasks = data.get('tasks', {})
+        figsize_input = data.get('figsize', 10)
+        
+        if figsize_input <= 10:
+            scale = 0.3
+        elif figsize_input <= 20:
+            scale = 1
+        elif figsize_input <= 30:
+            scale = 3
+        elif figsize_input <= 40:
+            scale = 4
+        elif figsize_input <= 50:
+            scale = 5
+        elif figsize_input <= 60:
+            scale = 6
+        elif figsize_input <= 70:
+            scale = 7
+        elif figsize_input <= 80:
+            scale = 8
+        elif figsize_input <= 90:
+            scale = 9
+        else:
+            scale = 10  
 
         G = nx.DiGraph()
 
         # Tambahkan node dan edge berdasarkan data
-        for task_name, info in data.items():
+        for task_name, info in tasks.items():  # Use tasks instead of data
             G.add_node(task_name, durasi=info['durasi'])
             for pre_task in info['syarat']:
                 G.add_edge(pre_task, task_name, weight=info['durasi'])
@@ -57,8 +80,8 @@ def run_cpm():
 
         # **FIGSIZE OTOMATIS BERUBAH SESUAI JUMLAH NODE**
         node_count = len(G.nodes)
-        figsize_x = max(8, min(22, node_count * 0.8))  # Lebar gambar
-        figsize_y = max(6, min(18, node_count * 0.6))  # Tinggi gambar
+        figsize_x = 8 * scale
+        figsize_y = 6 * scale
         plt.figure(figsize=(figsize_x, figsize_y), facecolor='white')
 
         # **Konfigurasi tampilan grafik**
