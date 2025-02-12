@@ -182,6 +182,8 @@
                         style="max-width: 100%; height: auto; display: block; margin: 0 auto;">
                 </div>
             `;
+                    const img = container.querySelector('img');
+                    img.src = response.image;
 
                     const elem = container.querySelector('img');
                     const panzoom = Panzoom(elem, {

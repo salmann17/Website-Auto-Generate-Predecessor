@@ -3,6 +3,7 @@ import networkx as nx
 import os
 import matplotlib.pyplot as plt
 from flask_cors import CORS
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -66,7 +67,7 @@ def run_cpm():
                 level_map[node] = -1  
 
         try:
-            pos = nx.multipartite_layout(G, subset_key=lambda n: level_map[n])
+            pos = nx.multipartite_layout(G, subset_key=lambda n: level_map[n], scale=scale)
         except Exception as e:
             print(f"⚠️ Multipartite Layout Error: {e}, menggunakan kamada_kawai_layout sebagai backup")
             pos = nx.kamada_kawai_layout(G)  
@@ -123,7 +124,7 @@ def run_cpm():
             print(f"✅ Gambar berhasil disimpan: {img_path}")
 
         return jsonify({
-            "image": "http://127.0.0.1:5000/get-image"
+            "image": f"http://127.0.0.1:5000/get-image?t={int(time.time())}" 
         })
 
     except Exception as e:
