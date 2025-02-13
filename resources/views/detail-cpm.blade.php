@@ -11,7 +11,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
     <script>
         function addDropdown(element) {
             const container = element.closest('tr').querySelector('.dropdown-container');
@@ -334,7 +334,7 @@
             let data = [];
             data.push(["Project Name:", projectName]);
             data.push(["Project Location:", projectLocation]);
-            data.push([]); 
+            data.push([]);
 
             const boldHeaders = ["No", "Activity", "Durasi", "Syarat"];
             data.push(boldHeaders);
@@ -362,46 +362,51 @@
                 data.push(row);
             }
 
-            let ws = XLSX.utils.aoa_to_sheet(data);
+            const ExcelJS = window.ExcelJS;
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('SheetCPM');
 
-            const range = XLSX.utils.decode_range(ws['!ref']);
-            for (let R = range.s.r; R <= range.e.r; ++R) {
-                for (let C = range.s.c; C <= range.e.c; ++C) {
-                    const cell_address = {
-                        c: C,
-                        r: R
-                    };
-                    const cell_ref = XLSX.utils.encode_cell(cell_address);
-                    if (!ws[cell_ref]) continue;
+            data.forEach(row => {
+                worksheet.addRow(row);
+            });
 
-                    ws[cell_ref].s = {
-                        border: {
-                            top: {
-                                style: "thin"
-                            },
-                            bottom: {
-                                style: "thin"
-                            },
-                            left: {
-                                style: "thin"
-                            },
-                            right: {
-                                style: "thin"
-                            }
+            const headerRow = worksheet.getRow(4);
+            headerRow.eachCell(cell => {
+                cell.font = {
+                    bold: true
+                };
+            });
+
+            worksheet.eachRow(row => {
+                row.eachCell(cell => {
+                    cell.border = {
+                        top: {
+                            style: 'thin'
+                        },
+                        left: {
+                            style: 'thin'
+                        },
+                        bottom: {
+                            style: 'thin'
+                        },
+                        right: {
+                            style: 'thin'
                         }
                     };
+                });
+            });
 
-                    if (R === 3) { 
-                        ws[cell_ref].s.font = {
-                            bold: true
-                        };
-                    }
-                }
-            }
-
-            let wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "SheetCPM");
-            XLSX.writeFile(wb, "CPM.xlsx");
+            workbook.xlsx.writeBuffer().then(buffer => {
+                const blob = new Blob([buffer], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'CPM.xlsx';
+                a.click();
+                window.URL.revokeObjectURL(url);
+            });
         }
     </script>
 </head>
