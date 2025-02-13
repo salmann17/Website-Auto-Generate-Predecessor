@@ -334,27 +334,21 @@
             let data = [];
             data.push(["Project Name:", projectName]);
             data.push(["Project Location:", projectLocation]);
-            data.push([]); // Baris kosong
+            data.push([]); 
 
-            // Membuat header dengan format bold (simulasi menggunakan huruf kapital)
             const boldHeaders = ["No", "Activity", "Durasi", "Syarat"];
             data.push(boldHeaders);
 
-            // Mengisi data
             for (let i = 1; i < rows.length; i++) {
                 let row = [];
                 let cells = rows[i].getElementsByTagName("td");
 
-                // Kolom No
                 row.push(i);
 
-                // Kolom Activity
                 row.push(cells[0].innerText.trim());
 
-                // Kolom Durasi
                 row.push(cells[1].innerText.trim());
 
-                // Kolom Syarat (dropdown yang dipilih)
                 let syaratValues = [];
                 let selects = cells[2].querySelectorAll('select');
                 selects.forEach(select => {
@@ -368,10 +362,8 @@
                 data.push(row);
             }
 
-            // Membuat worksheet dengan border
             let ws = XLSX.utils.aoa_to_sheet(data);
 
-            // Menambahkan border ke semua sel (simulasi menggunakan range)
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let R = range.s.r; R <= range.e.r; ++R) {
                 for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -382,7 +374,6 @@
                     const cell_ref = XLSX.utils.encode_cell(cell_address);
                     if (!ws[cell_ref]) continue;
 
-                    // Menambahkan style border
                     ws[cell_ref].s = {
                         border: {
                             top: {
@@ -400,8 +391,7 @@
                         }
                     };
 
-                    // Membuat header bold
-                    if (R === 3) { // Baris header
+                    if (R === 3) { 
                         ws[cell_ref].s.font = {
                             bold: true
                         };
@@ -410,7 +400,7 @@
             }
 
             let wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+            XLSX.utils.book_append_sheet(wb, ws, "SheetCPM");
             XLSX.writeFile(wb, "CPM.xlsx");
         }
     </script>
