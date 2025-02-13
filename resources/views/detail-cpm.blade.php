@@ -11,6 +11,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         function addDropdown(element) {
             const container = element.closest('tr').querySelector('.dropdown-container');
@@ -323,6 +324,95 @@
                 }
             });
         }
+
+        function exportExcel() {
+            let table = document.getElementById("tableData");
+            let rows = table.getElementsByTagName("tr");
+            let projectName = document.getElementById("project_name").value;
+            let projectLocation = document.getElementById("project_location").value;
+
+            let data = [];
+            data.push(["Project Name:", projectName]);
+            data.push(["Project Location:", projectLocation]);
+            data.push([]); // Baris kosong
+
+            // Membuat header dengan format bold (simulasi menggunakan huruf kapital)
+            const boldHeaders = ["No", "Activity", "Durasi", "Syarat"];
+            data.push(boldHeaders);
+
+            // Mengisi data
+            for (let i = 1; i < rows.length; i++) {
+                let row = [];
+                let cells = rows[i].getElementsByTagName("td");
+
+                // Kolom No
+                row.push(i);
+
+                // Kolom Activity
+                row.push(cells[0].innerText.trim());
+
+                // Kolom Durasi
+                row.push(cells[1].innerText.trim());
+
+                // Kolom Syarat (dropdown yang dipilih)
+                let syaratValues = [];
+                let selects = cells[2].querySelectorAll('select');
+                selects.forEach(select => {
+                    let selectedValue = select.options[select.selectedIndex].text;
+                    if (selectedValue && selectedValue !== "-") {
+                        syaratValues.push(selectedValue);
+                    }
+                });
+                row.push(syaratValues.join(", "));
+
+                data.push(row);
+            }
+
+            // Membuat worksheet dengan border
+            let ws = XLSX.utils.aoa_to_sheet(data);
+
+            // Menambahkan border ke semua sel (simulasi menggunakan range)
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const cell_address = {
+                        c: C,
+                        r: R
+                    };
+                    const cell_ref = XLSX.utils.encode_cell(cell_address);
+                    if (!ws[cell_ref]) continue;
+
+                    // Menambahkan style border
+                    ws[cell_ref].s = {
+                        border: {
+                            top: {
+                                style: "thin"
+                            },
+                            bottom: {
+                                style: "thin"
+                            },
+                            left: {
+                                style: "thin"
+                            },
+                            right: {
+                                style: "thin"
+                            }
+                        }
+                    };
+
+                    // Membuat header bold
+                    if (R === 3) { // Baris header
+                        ws[cell_ref].s.font = {
+                            bold: true
+                        };
+                    }
+                }
+            }
+
+            let wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+            XLSX.writeFile(wb, "CPM.xlsx");
+        }
     </script>
 </head>
 
@@ -336,7 +426,9 @@
                 <button onclick="editRows()" id="edit-button" class="edit-row bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded-md">Edit</button>
             </div>
             <input type="hidden" id="project_id" value="{{ $project->id }}">
-            <table class="w-full text-white border-separate border-spacing-2">
+            <input type="hidden" id="project_name" value="{{ $project->nama }}">
+            <input type="hidden" id="project_location" value="{{ $project->alamat }}">
+            <table id="tableData" class="w-full text-white border-separate border-spacing-2">
                 <thead>
                     <tr class="bg-gray-700">
                         <th class="p-2 border-b">Activity</th>
@@ -393,6 +485,7 @@
                 </tbody>
             </table>
             <div class="flex justify-end mt-4" style="gap: 20px">
+                <button onclick="exportExcel()" class="bg-green-900 hover:bg-green-700 text-white px-4 py-2 rounded-md justify-end">Export to Excel</button>
                 <button onclick="processTasks()" class="bg-blue-900 hover:bg-blue-400 text-white px-4 py-2 rounded-md justify-end">Create CPM</button>
             </div>
         </div>
