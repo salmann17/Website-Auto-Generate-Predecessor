@@ -328,18 +328,28 @@
         function exportExcel() {
             Swal.fire({
                 title: 'Pilih Rentang Tanggal',
-                html: '<label for="start-date">Tanggal Mulai:</label>' +
-                    '<input type="date" id="start-date" class="swal2-input">' +
-                    '<label for="end-date">Tanggal Akhir:</label>' +
-                    '<input type="date" id="end-date" class="swal2-input">',
+                html: `<div class="text-left">
+            <label class="block mb-2">Tanggal Mulai:</label>
+            <input type="date" id="start-date" class="swal2-input mb-4" required>
+            <label class="block mb-2">Tanggal Akhir:</label>
+            <input type="date" id="end-date" class="swal2-input" required>
+          </div>`,
+                focusConfirm: false,
                 showCancelButton: true,
-                confirmButtonText: 'Simpan',
+                confirmButtonText: 'Generate Excel',
                 preConfirm: () => {
                     const startDate = document.getElementById('start-date').value;
                     const endDate = document.getElementById('end-date').value;
+
                     if (!startDate || !endDate) {
-                        Swal.showValidationMessage('Mohon isi kedua tanggal!');
+                        Swal.showValidationMessage('Harap isi kedua tanggal!');
+                        return null;
                     }
+                    if (new Date(startDate) > new Date(endDate)) {
+                        Swal.showValidationMessage('Tanggal mulai tidak boleh lebih akhir dari tanggal akhir!');
+                        return null;
+                    }
+
                     return {
                         startDate,
                         endDate
@@ -347,91 +357,137 @@
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    let selectedDates = result.value;
-                    console.log('Tanggal Mulai:', selectedDates.startDate);
-                    console.log('Tanggal Akhir:', selectedDates.endDate);
-                }
-            });
-            let table = document.getElementById("tableData");
-            let rows = table.getElementsByTagName("tr");
-            let projectName = document.getElementById("project_name").value;
-            let projectLocation = document.getElementById("project_location").value;
+                    const {
+                        startDate,
+                        endDate
+                    } = result.value;
+                    const start = new Date(startDate);
+                    const end = new Date(endDate);
+                    const diffWeeks = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24 * 7));
 
-            let data = [];
-            data.push(["Project Name:", projectName]);
-            data.push(["Project Location:", projectLocation]);
-            data.push([]);
+                    const weekHeaders = [];
+                    const dateHeaders = [];
+                    for (let i = 0; i < diffWeeks; i++) {
+                        let weekStart = new Date(start);
+                        weekStart.setDate(start.getDate() + (i * 7));
+                        let weekEnd = new Date(weekStart);
+                        weekEnd.setDate(weekStart.getDate() + 6);
 
-            const boldHeaders = ["No", "Activity", "Durasi", "Syarat"];
-            data.push(boldHeaders);
-
-            for (let i = 1; i < rows.length; i++) {
-                let row = [];
-                let cells = rows[i].getElementsByTagName("td");
-
-                row.push(i);
-
-                row.push(cells[0].innerText.trim());
-
-                row.push(cells[1].innerText.trim());
-
-                let syaratValues = [];
-                let selects = cells[2].querySelectorAll('select');
-                selects.forEach(select => {
-                    let selectedValue = select.options[select.selectedIndex].text;
-                    if (selectedValue && selectedValue !== "-") {
-                        syaratValues.push(selectedValue);
+                        weekHeaders.push(`Minggu ${i + 1}`);
+                        dateHeaders.push(`${weekStart.toISOString().split('T')[0]} - ${weekEnd.toISOString().split('T')[0]}`);
                     }
-                });
-                row.push(syaratValues.join(", "));
 
-                data.push(row);
-            }
+                    let data = [];
+                    data.push(["Project Name:", document.getElementById("project_name").value]);
+                    data.push(["Project Location:", document.getElementById("project_location").value]);
+                    data.push(["Periode:", `${startDate} s/d ${endDate}`]);
+                    data.push([]);
 
-            const ExcelJS = window.ExcelJS;
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('SheetCPM');
+                    const mainHeaders = ["No", "Activity", "Durasi", "Syarat", "Schedule"];
+                    const subHeaders = ["", "", "", "", ...weekHeaders];
+                    const dateSubHeaders = ["", "", "", "", ...dateHeaders];
 
-            data.forEach(row => {
-                worksheet.addRow(row);
-            });
+                    data.push(mainHeaders);
+                    data.push(subHeaders);
+                    data.push(dateSubHeaders);
 
-            const headerRow = worksheet.getRow(4);
-            headerRow.eachCell(cell => {
-                cell.font = {
-                    bold: true
-                };
-            });
+                    let table = document.getElementById("tableData");
+                    let rows = table.getElementsByTagName("tr");
 
-            worksheet.eachRow(row => {
-                row.eachCell(cell => {
-                    cell.border = {
-                        top: {
-                            style: 'thin'
-                        },
-                        left: {
-                            style: 'thin'
-                        },
-                        bottom: {
-                            style: 'thin'
-                        },
-                        right: {
-                            style: 'thin'
+                    for (let i = 1; i < rows.length; i++) {
+                        let rowData = [];
+                        let cells = rows[i].getElementsByTagName("td");
+                        rowData.push(i);
+                        rowData.push(cells[0].innerText.trim());
+                        rowData.push(cells[1].innerText.trim());
+
+                        let syaratValues = [];
+                        let selects = cells[2].querySelectorAll('select');
+                        selects.forEach(select => {
+                            let selectedValue = select.options[select.selectedIndex].text;
+                            if (selectedValue && selectedValue !== "-") {
+                                syaratValues.push(selectedValue);
+                            }
+                        });
+                        rowData.push(syaratValues.join(", "));
+
+                        for (let w = 0; w < diffWeeks; w++) {
+                            rowData.push("");
                         }
-                    };
-                });
-            });
 
-            workbook.xlsx.writeBuffer().then(buffer => {
-                const blob = new Blob([buffer], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'CPM.xlsx';
-                a.click();
-                window.URL.revokeObjectURL(url);
+                        data.push(rowData);
+                    }
+
+                    const workbook = new ExcelJS.Workbook();
+                    const worksheet = workbook.addWorksheet('Schedule CPM');
+                    worksheet.addRows(data);
+
+                    worksheet.mergeCells('A5:A7'); 
+                    worksheet.mergeCells('B5:B7'); 
+                    worksheet.mergeCells('C5:C7'); 
+                    worksheet.mergeCells('D5:D7'); 
+                    worksheet.mergeCells(`E5:${String.fromCharCode(69 + diffWeeks - 1)}5`); 
+                    for (let i = 0; i < diffWeeks; i++) {
+                        let colLetter = String.fromCharCode(69 + i);
+                        worksheet.mergeCells(`${colLetter}6:${colLetter}7`); 
+                    }
+
+                    worksheet.eachRow((row, rowNumber) => {
+                        row.eachCell(cell => {
+                            cell.border = {
+                                top: {
+                                    style: 'thin'
+                                },
+                                left: {
+                                    style: 'thin'
+                                },
+                                bottom: {
+                                    style: 'thin'
+                                },
+                                right: {
+                                    style: 'thin'
+                                }
+                            };
+                            if (rowNumber === 5) {
+                                cell.font = {
+                                    bold: true
+                                };
+                                cell.fill = {
+                                    type: 'pattern',
+                                    pattern: 'solid',
+                                    fgColor: {
+                                        argb: 'FFD3D3D3'
+                                    }
+                                };
+                            }
+                        });
+                    });
+
+                    worksheet.columns.forEach(column => {
+                        let maxLength = 0;
+                        column.eachCell({
+                            includeEmpty: true
+                        }, cell => {
+                            const columnLength = cell.value ? cell.value.toString().length : 10;
+                            if (columnLength > maxLength) {
+                                maxLength = columnLength;
+                            }
+                        });
+                        column.width = maxLength < 10 ? 10 : maxLength + 2;
+                    });
+
+                    workbook.xlsx.writeBuffer().then(buffer => {
+                        const blob = new Blob([buffer], {
+                            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                        });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `CPM_Schedule_${startDate}_${endDate}.xlsx`;
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                    });
+                }
             });
         }
     </script>
