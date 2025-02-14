@@ -326,6 +326,32 @@
         }
 
         function exportExcel() {
+            Swal.fire({
+                title: 'Pilih Rentang Tanggal',
+                html: '<label for="start-date">Tanggal Mulai:</label>' +
+                    '<input type="date" id="start-date" class="swal2-input">' +
+                    '<label for="end-date">Tanggal Akhir:</label>' +
+                    '<input type="date" id="end-date" class="swal2-input">',
+                showCancelButton: true,
+                confirmButtonText: 'Simpan',
+                preConfirm: () => {
+                    const startDate = document.getElementById('start-date').value;
+                    const endDate = document.getElementById('end-date').value;
+                    if (!startDate || !endDate) {
+                        Swal.showValidationMessage('Mohon isi kedua tanggal!');
+                    }
+                    return {
+                        startDate,
+                        endDate
+                    };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let selectedDates = result.value;
+                    console.log('Tanggal Mulai:', selectedDates.startDate);
+                    console.log('Tanggal Akhir:', selectedDates.endDate);
+                }
+            });
             let table = document.getElementById("tableData");
             let rows = table.getElementsByTagName("tr");
             let projectName = document.getElementById("project_name").value;
