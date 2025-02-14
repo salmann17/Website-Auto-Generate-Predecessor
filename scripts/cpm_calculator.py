@@ -132,7 +132,7 @@ def run_cpm():
 
 @app.route('/get-image', methods=['GET'])
 def get_image():
-    return send_file("c://github/Website-CPM/output_graph.png", mimetype="image/png")
+    return send_file(os.getcwd()+"/output_graph.png", mimetype="image/png")
 
 @app.route('/', methods=['GET'])
 def home():
@@ -140,3 +140,5 @@ def home():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+
