@@ -333,7 +333,7 @@
             <input type="date" id="start-date" class="swal2-input mb-4" required>
             <label class="block mb-2">Tanggal Akhir:</label>
             <input type="date" id="end-date" class="swal2-input" required>
-          </div>`,
+        </div>`,
                 focusConfirm: false,
                 showCancelButton: true,
                 confirmButtonText: 'Generate Excel',
@@ -366,15 +366,13 @@
                     const diffWeeks = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24 * 7));
 
                     const weekHeaders = [];
-                    const dateHeaders = [];
+                    const startDateHeaders = [];
                     for (let i = 0; i < diffWeeks; i++) {
                         let weekStart = new Date(start);
                         weekStart.setDate(start.getDate() + (i * 7));
-                        let weekEnd = new Date(weekStart);
-                        weekEnd.setDate(weekStart.getDate() + 6);
 
                         weekHeaders.push(`Minggu ${i + 1}`);
-                        dateHeaders.push(`${weekStart.toISOString().split('T')[0]} - ${weekEnd.toISOString().split('T')[0]}`);
+                        startDateHeaders.push(weekStart.toISOString().split('T')[0]);
                     }
 
                     let data = [];
@@ -385,11 +383,11 @@
 
                     const mainHeaders = ["No", "Activity", "Durasi", "Syarat", "Schedule"];
                     const subHeaders = ["", "", "", "", ...weekHeaders];
-                    const dateSubHeaders = ["", "", "", "", ...dateHeaders];
+                    const startDateSubHeaders = ["", "", "", "", ...startDateHeaders];
 
                     data.push(mainHeaders);
                     data.push(subHeaders);
-                    data.push(dateSubHeaders);
+                    data.push(startDateSubHeaders);
 
                     let table = document.getElementById("tableData");
                     let rows = table.getElementsByTagName("tr");
@@ -422,18 +420,24 @@
                     const worksheet = workbook.addWorksheet('Schedule CPM');
                     worksheet.addRows(data);
 
-                    worksheet.mergeCells('A5:A7'); 
-                    worksheet.mergeCells('B5:B7'); 
-                    worksheet.mergeCells('C5:C7'); 
-                    worksheet.mergeCells('D5:D7'); 
-                    worksheet.mergeCells(`E5:${String.fromCharCode(69 + diffWeeks - 1)}5`); 
+                    worksheet.mergeCells('A5:A7');
+                    worksheet.mergeCells('B5:B7');
+                    worksheet.mergeCells('C5:C7');
+                    worksheet.mergeCells('D5:D7');
+
+                    const lastCol = String.fromCharCode(69 + diffWeeks - 1);
+                    worksheet.mergeCells(`E5:${lastCol}5`);
+
                     for (let i = 0; i < diffWeeks; i++) {
                         let colLetter = String.fromCharCode(69 + i);
-                        worksheet.mergeCells(`${colLetter}6:${colLetter}7`); 
                     }
 
                     worksheet.eachRow((row, rowNumber) => {
                         row.eachCell(cell => {
+                            cell.alignment = {
+                                vertical: 'middle',
+                                horizontal: 'center'
+                            };
                             cell.border = {
                                 top: {
                                     style: 'thin'
