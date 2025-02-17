@@ -12,11 +12,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('nodes', function (Blueprint $table) {
-            $table->id(); 
-            $table->string('activity', 45);
-            $table->integer('durasi');
-            $table->integer('prioritas');
-            $table->foreignId('project_idproject')->constrained('projects')->onDelete('cascade');
+            $table->increments('inode');
+            $table->string('activity', 45)->nullable();
+            $table->integer('durasi')->nullable();
+            $table->integer('prioritas')->nullable();
+            $table->integer('real_price')->nullable();
+            $table->string('bobot_rencana', 45)->nullable();
+            $table->string('bobot_realisasi', 45)->nullable();
+
+            $table->unsignedInteger('bab_idbab');
+            $table->foreign('bab_idbab')
+                ->references('idbab')
+                ->on('babs')
+                ->onDelete('cascade');
+
             $table->timestamps();
         });
     }

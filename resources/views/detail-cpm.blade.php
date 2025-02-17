@@ -494,13 +494,14 @@
                 }
             });
         }
+
     </script>
 </head>
 
 <body class="bg-gradient-to-tl from-black via-gray-900 to-blue-900 dark:from-black dark:via-gray-900 dark:to-blue-900 transition-all duration-500 font-inter">
 
     <div class="flex min-h-screen px-4 py-8">
-        <div class="w-full md:w-3/5 p-4 bg-gray-800 rounded-lg shadow-lg">
+        <div class="w-full p-4 bg-gray-800 rounded-lg shadow-lg">
             <h1 class="text-4xl font-extrabold text-white mb-4">Detail CPM</h1>
             <div class="flex justify-end" style="gap: 10px">
                 <button onclick="saveRows()" id="save-button" class="save-row bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">Save</button>
@@ -516,6 +517,7 @@
                         <th class="p-2 border-b">Durasi (minggu)</th>
                         <th class="p-2 border-b">Syarat</th>
                         <th class="p-2 border-b">Aksi</th>
+                        <th class="p-2 border-b">Price</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -571,15 +573,6 @@
             </div>
         </div>
 
-        <div class="w-full md:w-2/5 p-4 bg-gray-700 rounded-lg shadow-lg ">
-            <div id="cy" class="w-full h-[70vh] mt-6 bg-gray-800 border-2 border-gray-600"
-                style="overflow: hidden; cursor: grab;">
-            </div> <br>
-            <div class="flex items-center gap-2">
-                <input class="w-25 bg-gray-600 text-white rounded-md p-1" type="number" name="figsize" id="figsize-input" min="1" value="50">
-                <button onclick="processTasks()" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">Apply Size</button>
-            </div>
-        </div>
     </div>
 </body>
 

@@ -9,24 +9,29 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up()
+    public function up(): void
     {
-        Schema::create('projects', function (Blueprint $table) {
-            $table->increments('idproject');
+        Schema::create('babs', function (Blueprint $table) {
+            $table->increments('idbab');
             $table->string('nama', 45);
-            $table->string('alamat', 45);
             $table->string('activity', 45)->nullable();
-            $table->string('deskripsi', 255)->nullable();
+
+            $table->unsignedInteger('project_idproject');
+            $table->foreign('project_idproject')
+                  ->references('idproject')
+                  ->on('projects')
+                  ->onDelete('cascade');
+
             $table->timestamps();
         });
-    }
 
+    }
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('projects');
+        Schema::dropIfExists('babs');
     }
 };

@@ -12,9 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('predecessors', function (Blueprint $table) {
-            $table->foreignId('node_core')->constrained('nodes')->onDelete('cascade');
-            $table->foreignId('node_cabang')->constrained('nodes')->onDelete('cascade');
-            $table->primary(['node_core', 'node_cabang']);
+            $table->increments('id');
+
+            $table->unsignedInteger('node_core');
+            $table->unsignedInteger('node_cabang');
+
+            $table->foreign('node_core')
+                ->references('idnode')
+                ->on('nodes')
+                ->onDelete('cascade');
+
+            $table->foreign('node_cabang')
+                ->references('idnode')
+                ->on('nodes')
+                ->onDelete('cascade');
+
             $table->timestamps();
         });
     }
