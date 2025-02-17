@@ -14,7 +14,6 @@
 
     <div class="min-h-screen px-4 py-8 flex flex-col items-center justify-start">
         <h1 class="text-4xl font-extrabold text-white mb-8">List Project</h1>
-        <!-- <p class="text-lg text-white mb-8">This is the page to view project details.</p> -->
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 w-full">
             @foreach ($projects as $project)
@@ -23,8 +22,11 @@
                         <h2 class="text-xl font-semibold mb-2 text-center">{{ $project->nama }}</h2>
                         <p class="text-gray-300 text-center">{{ $project->deskripsi }}</p>
                         <p class="text-gray-500 text-center">{{ $project->alamat }}</p>
-                        <a href="{{ url('/detail-cpm', $project->id) }}" class="mt-4 inline-block px-6 py-2 bg-transparent border-2 border-gray-500 text-white rounded-full transition duration-300 hover:bg-white hover:text-black hover:border-black">
+                        <a href="{{ route('nodes.show', $project->idproject) }}" class="mt-4 inline-block px-6 py-2 bg-transparent border-2 border-gray-500 text-white rounded-full transition duration-300 hover:bg-white hover:text-black hover:border-black">
                             View Details
+                        </a>
+                        <a href="" class="mt-4 inline-block px-6 py-2 bg-transparent border-2 border-gray-500 text-white rounded-full transition duration-300 hover:bg-white hover:text-black hover:border-black">
+                            Update Details
                         </a>
                     </div>
                 </div>

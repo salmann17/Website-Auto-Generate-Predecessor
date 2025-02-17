@@ -9,11 +9,8 @@ Route::get('/', function () {
 });
 
 Route::get('/view-project', [ProjectController::class, 'index'])->name('view-project');
-
-Route::get('/detail-cpm', function () {
-    return view('detail-cpm');
-});
 Route::get('/detail-cpm/{id}', [NodeController::class, 'show'])->name('nodes.show');
+
 Route::post('/run-python', [NodeController::class, 'runPython']);
 Route::post('/update-nodes', [NodeController::class, 'updateNodes']);
 Route::post('/delete-node', [NodeController::class, 'deleteNode']);
@@ -22,9 +19,5 @@ Route::post('/projects/store', [ProjectController::class, 'store'])->name('proje
 Route::get('/create-prompt/{id}', [ProjectController::class, 'createPrompt'])->name('tampil-prompt');
 Route::post('/saveNodes', [ProjectController::class, 'saveNodes']);
 
-
-
-
-
-
-
+Route::post('/update-total-price', [NodeController::class, 'updateTotalPrice'])
+    ->name('updateTotalPrice');

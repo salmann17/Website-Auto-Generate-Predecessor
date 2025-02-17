@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script>
         function addDropdown(element) {
             const container = element.closest('tr').querySelector('.dropdown-container');
@@ -21,9 +22,7 @@
             newDropdown.innerHTML = `
                 <select name="syarat[]" class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
                     <option value="">-</option>
-                    @foreach($nodes as $node)
-                    <option value="{{$node->id}}">{{$node->activity}}</option>
-                    @endforeach
+
                 </select>
                 <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
                 <button type="button" onclick="removeDropdown(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button>
@@ -229,9 +228,7 @@
                 <div class="my-2">
                     <select class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
                         <option value="">-</option>
-                        @foreach($nodes as $node)
-                        <option value="{{$node->id}}" data-prioritas="{{$node->prioritas}}">{{$node->activity}}</option>
-                        @endforeach
+                        
                     </select>
                     <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
                     <button type="button" onclick="removeDropdown(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button>
@@ -494,7 +491,6 @@
                 }
             });
         }
-
     </script>
 </head>
 
@@ -507,64 +503,54 @@
                 <button onclick="saveRows()" id="save-button" class="save-row bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">Save</button>
                 <button onclick="editRows()" id="edit-button" class="edit-row bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded-md">Edit</button>
             </div>
-            <input type="hidden" id="project_id" value="{{ $project->id }}">
-            <input type="hidden" id="project_name" value="{{ $project->nama }}">
-            <input type="hidden" id="project_location" value="{{ $project->alamat }}">
+
             <table id="tableData" class="w-full text-white border-separate border-spacing-2">
                 <thead>
                     <tr class="bg-gray-700">
                         <th class="p-2 border-b">Activity</th>
-                        <th class="p-2 border-b">Durasi (minggu)</th>
+                        <th class="p-2 border-b">Durasi </th>
                         <th class="p-2 border-b">Syarat</th>
                         <th class="p-2 border-b">Aksi</th>
                         <th class="p-2 border-b">Price</th>
+                        <th class="p-2 border-b">Bobot</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @foreach ($nodes as $node)
-                    <tr class="bg-gray-800" data-prioritas="{{ $node->prioritas }}" data-id="{{$node->id}}">
-                        <td class="p-2"> {{ $node->activity }}</td>
-                        <td class="p-2">{{ $node->durasi }}</td>
-                        <td class="p-2">
-                            @php
-                            $filteredPredecessors = $predecessors->where('node_core', $node->id);
-                            @endphp
-
-                            @if($filteredPredecessors->count() > 0)
-                            @foreach($filteredPredecessors as $predecessor)
-                            <div class="dropdown-container">
-                                <select class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
-                                    @if($predecessor->nodeCabang)
-                                    <option value="{{ $predecessor->nodeCabang->id }}">
-                                        {{ $predecessor->nodeCabang->activity }}
-                                    </option>
-                                    <option value="">-</option>
-                                    @foreach($nodes as $node)
-                                    <option value="{{$node->id}}" data-prioritas="{{$node->prioritas}}">{{$node->activity}}</option>
-                                    @endforeach
-                                    @endif
-                                </select>
-                                <button id="add-dropdown-btn" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
-                            </div>
-                            @endforeach
-                            @else
+                <tbody class="divide-y divide-gray-600">
+                    @foreach ($activities as $activity)
+                    <tr class="bg-gray-800 text-white font-bold transition duration-150 ">
+                        <td class="p-4">{{ $activity->idactivity }}. {{ $activity->activity }}</td>
+                    </tr>
+                    @foreach ($activity->subActivities as $subActivity)
+                    <tr class="bg-gray-800 text-gray-300  transition duration-150">
+                        <td class="p-4 pl-8">• {{ $subActivity->activity }}</td>
+                    </tr>
+                    @foreach ($subActivity->nodes as $node)
+                    <tr class="bg-gray-800 text-gray-400 transition duration-150">
+                        <td class="p-4 pl-12">- {{ $node->activity }}</td>
+                        <td class="p-4">{{ $node->durasi }}</td>
+                        <td>
                             <div class="dropdown-container">
                                 <select class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
                                     <option value="">-</option>
-                                    @foreach($nodes as $node)
-                                    <option value="{{$node->id}}">{{$node->activity}}</option>
-                                    @endforeach
                                 </select>
                                 <button id="add-dropdown-btn" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
-                            </div>
-                            @endif
                         </td>
-                        <td class="p-2">
-                            <button onclick="addRow(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">+</button>
-                            <button onclick="removeRow(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md">-</button>
+                        <td>
+                            <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
+                            <button type="button" onclick="removeDropdown(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button>
                         </td>
+                        <td> {{$node->total_price}}
+                            <i class="fa-solid fa-pen-to-square"
+                                onclick="updateTotalPrice('{{ $node->idnode }}', '{{ $node->total_price ?? '' }}')"
+                                style="cursor: pointer;">
+                            </i>
+                        </td>
+                        <td> {{$node->bobot_rencana}} </td>
                     </tr>
                     @endforeach
+                    @endforeach
+                    @endforeach
+
                 </tbody>
             </table>
             <div class="flex justify-end mt-4" style="gap: 20px">
@@ -575,5 +561,55 @@
 
     </div>
 </body>
+<script>
+    function updateTotalPrice(nodeId, currentTotalPrice) {
+        Swal.fire({
+            title: 'Update Total Price',
+            input: 'number',
+            inputValue: currentTotalPrice || '',
+            inputLabel: 'Masukkan Total Price baru',
+            showCancelButton: true,
+            confirmButtonText: 'Update',
+            showLoaderOnConfirm: true,
+            preConfirm: (newPrice) => {
+                // Validasi sederhana: pastikan input tidak kosong
+                if (!newPrice) {
+                    Swal.showValidationMessage('Mohon masukkan total price!');
+                    return false;
+                }
+                // Kirim data update ke server via AJAX
+                return $.ajax({
+                        url: '/update-total-price', // Pastikan route ini sudah dibuat di Laravel
+                        method: 'POST',
+                        data: {
+                            nodeId: nodeId,
+                            total_price: newPrice,
+                            _token: $('meta[name="csrf-token"]').attr('content')
+                        }
+                    })
+                    .done(function(response) {
+                        return response;
+                    })
+                    .fail(function(error) {
+                        Swal.showValidationMessage(`Request gagal: ${error.responseText}`);
+                    });
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: 'Total Price berhasil diperbarui.',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    // Refresh halaman atau update DOM secara dinamis
+                    location.reload();
+                });
+            }
+        });
+    }
+</script>
 
 </html>

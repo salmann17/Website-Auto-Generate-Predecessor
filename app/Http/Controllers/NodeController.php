@@ -5,32 +5,63 @@ namespace App\Http\Controllers;
 use App\Models\Node;
 use App\Models\Predecessor;
 use App\Models\Project;
-use Illuminate\Container\Attributes\Log;
+use App\Models\Activity;
+use App\Models\SubActivity;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log as FacadesLog;
-use Symfony\Component\Process\Process;
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use App\Exports\NodesExport;
-use Maatwebsite\Excel\Facades\Excel;
 
 
 class NodeController extends Controller
 {
     public function show($id)
     {
-        // $project = Project::findOrFail($id);
-        // $nodes = Node::where('project_idproject', $id)->orderBy('prioritas', 'asc')->get();;
-        // $predecessors = Predecessor::with('nodeCore', 'nodeCabang')
-        //     ->whereHas('nodeCore', function ($query) use ($id) {
-        //         $query->where('project_idproject', $id);
-        //     })
-        //     ->get();
+        $projects = Project::findOrFail($id);
 
-        // $predDistinct = $predecessors->unique('node_core');
-        // $filteredPredecessors = $predecessors->groupBy('node_core');
+        $activities = Activity::where('idproject', $projects->idproject)
+            ->with(['subActivities.nodes'])
+            ->get();
 
-        // return view('detail-cpm', compact('project', 'nodes', 'predecessors', 'predDistinct', 'filteredPredecessors'));
+        return view('detail-cpm', compact('projects', 'activities'));
     }
 
-    
+    public function updateTotalPrice(Request $request)
+    {
+        $request->validate([
+            'nodeId'      => 'required|integer',
+            'total_price' => 'required|numeric'
+        ]);
+
+        // Cari node berdasarkan idnode
+        $node = Node::find($request->nodeId);
+        if (!$node) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Node tidak ditemukan.'
+            ], 404);
+        }
+
+        // Update kolom total_price
+        $node->total_price = $request->total_price;
+        $node->save();
+
+        // Hitung total dari semua total_price
+        $sumTotalPrice = Node::sum('total_price');
+
+        // Perbarui kolom bobot untuk setiap node: bobot = total_price / sum(total_price)
+        if ($sumTotalPrice > 0) {
+            // Dapatkan seluruh node yang ingin diperbarui (misalnya semua node)
+            $nodes = Node::all();
+            foreach ($nodes as $nodeUpdate) {
+                $nodeUpdate->bobot_rencana = ($nodeUpdate->total_price / $sumTotalPrice)*100;
+                $nodeUpdate->save();
+            }
+        } else {
+            // Jika totalnya 0, set bobot jadi 0 untuk semua node
+            Node::query()->update(['bobot' => 0]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Total Price dan Bobot berhasil diperbarui.'
+        ]);
+    }
 }
