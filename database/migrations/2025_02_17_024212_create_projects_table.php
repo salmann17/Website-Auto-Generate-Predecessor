@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('project', function (Blueprint $table) {
             $table->increments('idproject');
-            $table->string('nama', 45);
-            $table->string('activity', 45)->nullable();
-            $table->string('deskripsi', 45)->nullable();
+            $table->string('nama', 45)->nullable();
+            $table->string('alamat', 45)->nullable();
+            $table->string('deskripsi', 255)->nullable();
             $table->timestamps();
         });
     }

@@ -21,7 +21,8 @@ class Project extends Model
     protected $fillable = [
         'nama',
         'activity',
-        'deskripsi'
+        'deskripsi',
+        'alamat'
     ];
 
     public function activities()

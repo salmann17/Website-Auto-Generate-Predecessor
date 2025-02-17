@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('sub_activity', function (Blueprint $table) {
             $table->increments('idsub_activity');
-            $table->string('activity', 45)->nullable();
-            
+            $table->string('activity', 255)->nullable();
+
             $table->unsignedInteger('idactivity');
             $table->foreign('idactivity')
                 ->references('idactivity')

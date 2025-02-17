@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('nodes', function (Blueprint $table) {
             $table->increments('idnode');
-            $table->string('activity', 45)->nullable();
+            $table->string('activity', 255)->nullable();
             $table->integer('durasi')->nullable();
             $table->integer('prioritas')->nullable();
             $table->integer('total_price')->nullable();
