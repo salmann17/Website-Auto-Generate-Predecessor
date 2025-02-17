@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('predecessors', function (Blueprint $table) {
+        Schema::create('predecessor', function (Blueprint $table) {
             $table->unsignedInteger('node_core');
             $table->unsignedInteger('node_cabang');
 

@@ -11,20 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('babs', function (Blueprint $table) {
-            $table->increments('idbab');
-            $table->string('nama', 45);
+        Schema::create('sub_activity', function (Blueprint $table) {
+            $table->increments('idsub_activity');
             $table->string('activity', 45)->nullable();
-
-            $table->unsignedInteger('project_idproject');
-            $table->foreign('project_idproject')
-                  ->references('idproject')
-                  ->on('projects')
-                  ->onDelete('cascade');
+            
+            $table->unsignedInteger('idactivity');
+            $table->foreign('idactivity')
+                ->references('idactivity')
+                ->on('activity')
+                ->onDelete('cascade');
 
             $table->timestamps();
         });
-
     }
 
     /**
@@ -32,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('babs');
+        Schema::dropIfExists('sub_activity');
     }
 };

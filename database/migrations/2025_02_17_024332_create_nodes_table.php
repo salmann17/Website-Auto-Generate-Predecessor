@@ -16,14 +16,14 @@ return new class extends Migration
             $table->string('activity', 45)->nullable();
             $table->integer('durasi')->nullable();
             $table->integer('prioritas')->nullable();
-            $table->integer('real_price')->nullable();
+            $table->integer('total_price')->nullable();
             $table->string('bobot_rencana', 45)->nullable();
             $table->string('bobot_realisasi', 45)->nullable();
 
-            $table->unsignedInteger('bab_idbab');
-            $table->foreign('bab_idbab')
-                ->references('idbab')
-                ->on('babs')
+            $table->unsignedInteger('id_sub_activity');
+            $table->foreign('id_sub_activity')
+                ->references('idsub_activity')
+                ->on('sub_activity')
                 ->onDelete('cascade');
 
             $table->timestamps();
