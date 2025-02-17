@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up()
+    public function up(): void
     {
         Schema::create('projects', function (Blueprint $table) {
             $table->increments('idproject');
@@ -19,8 +19,8 @@ return new class extends Migration
             $table->string('deskripsi', 255)->nullable();
             $table->timestamps();
         });
-    }
 
+    }
 
     /**
      * Reverse the migrations.
