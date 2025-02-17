@@ -10,18 +10,25 @@ class Predecessor extends Model
     use HasFactory;
 
     protected $table = 'predecessors';
+
+    protected $primaryKey = 'id';
+    public $incrementing = true;
+    protected $keyType = 'int';
+    public $timestamps = true;
+
     protected $fillable = [
         'node_core',
         'node_cabang',
     ];
 
-    public function nodeCore()
+    public function coreNode()
     {
-        return $this->belongsTo(Node::class, 'node_core', 'id');
+        return $this->belongsTo(Node::class, 'node_core', 'idnode');
     }
 
-    public function nodeCabang()
+    public function cabangNode()
     {
-        return $this->belongsTo(Node::class, 'node_cabang', 'id');
+        return $this->belongsTo(Node::class, 'node_cabang', 'idnode');
     }
+
 }

@@ -10,23 +10,36 @@ class Node extends Model
     use HasFactory;
 
     protected $table = 'nodes';
-    protected $primaryKey = 'id';
+    protected $primaryKey = 'inode';
+    public $incrementing = true;
+    protected $keyType = 'int';
+    public $timestamps = true;
+
     protected $fillable = [
         'activity',
         'durasi',
         'prioritas',
-        'project_idproject',
+        'total_price',
+        'bobot_rencana',
+        'bobot_realisasi',
+        'bab_idbab'
     ];
 
-    public function project()
+    public function bab()
     {
-        return $this->belongsTo(Project::class, 'project_idproject', 'id');
+        return $this->belongsTo(Bab::class, 'bab_idbab', 'idbab');
     }
 
-    public function predecessorsCore()
+    public function corePredecessors()
     {
-        return $this->hasMany(Predecessor::class, 'node_core', 'id');
+        return $this->hasMany(Predecessor::class, 'node_core', 'inode');
     }
+
+    public function cabangPredecessors()
+    {
+        return $this->hasMany(Predecessor::class, 'node_cabang', 'inode');
+    }
+
 
     public function predecessorsCabang()
     {

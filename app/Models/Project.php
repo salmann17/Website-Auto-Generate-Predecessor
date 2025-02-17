@@ -10,16 +10,22 @@ class Project extends Model
     use HasFactory;
 
     protected $table = 'projects';
-    protected $primaryKey = 'id';
+    protected $primaryKey = 'idproject';
+    public $incrementing = true;        
+    protected $keyType = 'int';
+
+    public $timestamps = true; 
+
     protected $fillable = [
         'nama',
         'alamat',
-        'deskripsi',
-        
+        'activity',
+        'deskripsi'
     ];
 
-    public function nodes()
+    public function babs()
     {
-        return $this->hasMany(Node::class, 'project_idproject', 'id');
+        return $this->hasMany(Bab::class, 'project_idproject', 'idproject');
     }
+
 }
