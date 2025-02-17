@@ -10,7 +10,7 @@ class Node extends Model
     use HasFactory;
 
     protected $table = 'nodes';
-    protected $primaryKey = 'inode';
+    protected $primaryKey = 'idnode';
     public $incrementing = true;
     protected $keyType = 'int';
     public $timestamps = true;
@@ -22,27 +22,22 @@ class Node extends Model
         'total_price',
         'bobot_rencana',
         'bobot_realisasi',
-        'bab_idbab'
+        'id_sub_activity'
     ];
 
-    public function bab()
+    public function subActivity()
     {
-        return $this->belongsTo(Bab::class, 'bab_idbab', 'idbab');
+        return $this->belongsTo(SubActivity::class, 'id_sub_activity', 'idsub_activity');
     }
 
     public function corePredecessors()
     {
-        return $this->hasMany(Predecessor::class, 'node_core', 'inode');
+        return $this->hasMany(Predecessor::class, 'node_core', 'idnode');
     }
 
     public function cabangPredecessors()
     {
-        return $this->hasMany(Predecessor::class, 'node_cabang', 'inode');
+        return $this->hasMany(Predecessor::class, 'node_cabang', 'idnode');
     }
 
-
-    public function predecessorsCabang()
-    {
-        return $this->hasMany(Predecessor::class, 'node_cabang', 'id');
-    }
 }

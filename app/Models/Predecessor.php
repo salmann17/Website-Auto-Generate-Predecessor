@@ -9,16 +9,15 @@ class Predecessor extends Model
 {
     use HasFactory;
 
-    protected $table = 'predecessors';
-
-    protected $primaryKey = 'id';
+    protected $table = 'predecessor';
+    protected $primaryKey = 'id'; 
     public $incrementing = true;
     protected $keyType = 'int';
     public $timestamps = true;
 
     protected $fillable = [
         'node_core',
-        'node_cabang',
+        'node_cabang'
     ];
 
     public function coreNode()
@@ -30,5 +29,4 @@ class Predecessor extends Model
     {
         return $this->belongsTo(Node::class, 'node_cabang', 'idnode');
     }
-
 }

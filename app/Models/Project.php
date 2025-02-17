@@ -9,23 +9,25 @@ class Project extends Model
 {
     use HasFactory;
 
-    protected $table = 'projects';
-    protected $primaryKey = 'idproject';
-    public $incrementing = true;        
+    use HasFactory;
+
+    protected $table = 'project';              
+    protected $primaryKey = 'idproject';       
+    public $incrementing = true;
     protected $keyType = 'int';
 
-    public $timestamps = true; 
+    public $timestamps = true;
 
     protected $fillable = [
         'nama',
-        'alamat',
         'activity',
         'deskripsi'
     ];
 
-    public function babs()
+    public function activities()
     {
-        return $this->hasMany(Bab::class, 'project_idproject', 'idproject');
+        return $this->hasMany(Activity::class, 'idproject', 'idproject');
     }
+
 
 }
