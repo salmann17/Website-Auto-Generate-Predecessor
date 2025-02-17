@@ -500,8 +500,9 @@
         <div class="w-full p-4 bg-gray-800 rounded-lg shadow-lg">
             <h1 class="text-4xl font-extrabold text-white mb-4">Detail CPM</h1>
             <div class="flex justify-end" style="gap: 10px">
-                <button onclick="saveRows()" id="save-button" class="save-row bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">Save</button>
-                <button onclick="editRows()" id="edit-button" class="edit-row bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded-md">Edit</button>
+                <!-- <button onclick="saveRows()" id="save-button" class="save-row bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">Save</button> -->
+                <button onclick="exportExcel()" class="bg-green-900 hover:bg-green-700 text-white px-4 py-2 rounded-md justify-end">Export to Excel</button>
+                <!-- <button onclick="editRows()" id="edit-button" class="edit-row bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded-md">Edit</button> -->
             </div>
 
             <table id="tableData" class="w-full text-white border-separate border-spacing-2">
@@ -510,7 +511,7 @@
                         <th class="p-2 border-b">Activity</th>
                         <th class="p-2 border-b">Durasi </th>
                         <th class="p-2 border-b">Syarat</th>
-                        <th class="p-2 border-b">Aksi</th>
+                        <!-- <th class="p-2 border-b">Aksi</th> -->
                         <th class="p-2 border-b">Price</th>
                         <th class="p-2 border-b">Bobot</th>
                     </tr>
@@ -535,17 +536,17 @@
                                 </select>
                                 <button id="add-dropdown-btn" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
                         </td>
-                        <td>
+                        <!-- <td>
                             <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
                             <button type="button" onclick="removeDropdown(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button>
-                        </td>
-                        <td> {{$node->total_price}}
+                        </td> -->
+                        <td> Rp.{{$node->total_price}}
                             <i class="fa-solid fa-pen-to-square"
                                 onclick="updateTotalPrice('{{ $node->idnode }}', '{{ $node->total_price ?? '' }}')"
                                 style="cursor: pointer;">
                             </i>
                         </td>
-                        <td> {{$node->bobot_rencana}} </td>
+                        <td> {{$node->bobot_rencana}}% </td>
                     </tr>
                     @endforeach
                     @endforeach
@@ -553,10 +554,9 @@
 
                 </tbody>
             </table>
-            <div class="flex justify-end mt-4" style="gap: 20px">
-                <button onclick="exportExcel()" class="bg-green-900 hover:bg-green-700 text-white px-4 py-2 rounded-md justify-end">Export to Excel</button>
+            <!-- <div class="flex justify-end mt-4" style="gap: 20px">
                 <button onclick="processTasks()" class="bg-blue-900 hover:bg-blue-400 text-white px-4 py-2 rounded-md justify-end">Create CPM</button>
-            </div>
+            </div> -->
         </div>
 
     </div>

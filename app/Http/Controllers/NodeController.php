@@ -30,7 +30,6 @@ class NodeController extends Controller
             'total_price' => 'required|numeric'
         ]);
 
-        // Cari node berdasarkan idnode
         $node = Node::find($request->nodeId);
         if (!$node) {
             return response()->json([
@@ -39,23 +38,18 @@ class NodeController extends Controller
             ], 404);
         }
 
-        // Update kolom total_price
         $node->total_price = $request->total_price;
         $node->save();
 
-        // Hitung total dari semua total_price
         $sumTotalPrice = Node::sum('total_price');
 
-        // Perbarui kolom bobot untuk setiap node: bobot = total_price / sum(total_price)
         if ($sumTotalPrice > 0) {
-            // Dapatkan seluruh node yang ingin diperbarui (misalnya semua node)
             $nodes = Node::all();
             foreach ($nodes as $nodeUpdate) {
-                $nodeUpdate->bobot_rencana = ($nodeUpdate->total_price / $sumTotalPrice)*100;
+                $nodeUpdate->bobot_rencana = round(($nodeUpdate->total_price / $sumTotalPrice)*100, 2);
                 $nodeUpdate->save();
             }
         } else {
-            // Jika totalnya 0, set bobot jadi 0 untuk semua node
             Node::query()->update(['bobot' => 0]);
         }
 
