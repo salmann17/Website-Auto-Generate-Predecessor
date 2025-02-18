@@ -518,7 +518,7 @@
                         <th class="p-2 border-b">Bobot</th>
                     </tr>
                 </thead>
-                <input type="hidden" name="project_id" id="project_id" value="{{ $projects->nama }}">
+                <input type="hidden" name="project_name" id="project_name" value="{{ $projects->nama }}">
                 <input type="hidden" name="project_location" id="project_location" value="{{ $projects->alamat }}">
 
                 <tbody class="divide-y divide-gray-600">
@@ -620,7 +620,6 @@
             const end = new Date(endDate);
             const diffWeeks = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24 * 7));
 
-            // Header untuk schedule
             const weekHeaders = [];
             for (let i = 0; i < diffWeeks; i++) {
                 weekHeaders.push(`Minggu ${i + 1}`);
@@ -633,14 +632,14 @@
             data.push(["Project Name:", document.getElementById("project_name")?.value || ""]);
             data.push(["Project Location:", document.getElementById("project_location")?.value || ""]);
             data.push(["Periode:", `${startDate} s/d ${endDate}`]);
-            data.push([]); 
+            data.push([]);
 
             data.push(mainHeaders);
             data.push(subHeaders);
 
-            let activityIndex = 0; 
-            let subActivityIndex = 0; 
-            let nodeIndex = 0; 
+            let activityIndex = 0;
+            let subActivityIndex = 0;
+            let nodeIndex = 0;
 
             let sTasks = [];
             let sBobots = [];
@@ -664,7 +663,7 @@
                         noStr,
                         activityName,
                         durasi,
-                        "", 
+                        "",
                         "",
                         bobot,
                     ];
@@ -681,7 +680,7 @@
                     nodeIndex = 0;
 
                     const activityLetter = indexToLetter(activityIndex - 1);
-                    const noStr = activityLetter + subActivityIndex; 
+                    const noStr = activityLetter + subActivityIndex;
                     const activityName = cells[0].innerText.trim();
                     const durasi = cells[1]?.innerText.trim() || "";
                     const bobot = cells[4]?.innerText.replace('%', '').trim() || "0";
@@ -704,7 +703,7 @@
 
                 } else if (row.classList.contains("text-gray-400")) {
                     nodeIndex++;
-                    const noStr = nodeIndex.toString(); 
+                    const noStr = nodeIndex.toString();
                     const activityName = cells[0].innerText.trim();
                     const durasi = cells[1]?.innerText.trim() || "";
                     const bobot = cells[4]?.innerText.replace('%', '').trim() || "0";
@@ -731,7 +730,7 @@
             const worksheet = workbook.addWorksheet('Schedule CPM');
             worksheet.addRows(data);
 
-            const colStart = 7; 
+            const colStart = 7;
             const colEnd = colStart + diffWeeks - 1;
             if (diffWeeks > 0) {
                 worksheet.mergeCells(5, colStart, 5, colEnd);
@@ -834,7 +833,7 @@
                 data: {
                     labels: sTasks,
                     datasets: [{
-                        label: 'S-Curve (Kumulatif Bobot %)',
+                        label: '',
                         data: cumulative,
                         borderColor: 'rgba(75, 192, 192, 1)',
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -843,10 +842,18 @@
                     }]
                 },
                 options: {
+                    responsive: true,
                     scales: {
+                        x: {
+                            display: false 
+                        },
                         y: {
-                            beginAtZero: true,
-                            max: 100
+                            display: false, 
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
                         }
                     }
                 }
@@ -877,7 +884,7 @@
                 }).catch(err => {
                     console.error("Error generating Excel file:", err);
                 });
-            }, 1500); 
+            }, 1500);
         });
     }
 
@@ -896,7 +903,7 @@
                     return false;
                 }
                 return $.ajax({
-                        url: '/update-total-price', 
+                        url: '/update-total-price',
                         method: 'POST',
                         data: {
                             nodeId: nodeId,
