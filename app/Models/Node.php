@@ -30,7 +30,7 @@ class Node extends Model
         return $this->belongsTo(SubActivity::class, 'id_sub_activity', 'idsub_activity');
     }
 
-    public function corePredecessors()
+    public function predecessors()
     {
         return $this->hasMany(Predecessor::class, 'node_core', 'idnode');
     }
@@ -39,5 +39,7 @@ class Node extends Model
     {
         return $this->hasMany(Predecessor::class, 'node_cabang', 'idnode');
     }
+
+
 
 }

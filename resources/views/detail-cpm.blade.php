@@ -535,16 +535,18 @@
                         <td class="p-4 pl-12">- {{ $node->activity }}</td>
                         <td class="p-4">{{ $node->durasi }}</td>
                         <td>
+                            @foreach ($node->predecessors as $pred)
                             <div class="dropdown-container">
                                 <select class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
-                                    <option value="">-</option>
+                                    <option value="{{ $pred->nodeCabang->idnode ?? '' }}">
+                                        {{ $pred->nodeCabang->activity ?? '-' }}
+                                    </option>
                                 </select>
-                                <button id="add-dropdown-btn" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
+                            </div>
+                            @endforeach
+                            <button id="add-dropdown-btn" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
                         </td>
-                        <!-- <td>
-                            <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
-                            <button type="button" onclick="removeDropdown(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button>
-                        </td> -->
+
                         <td> Rp.{{$node->total_price}}
                             <i class="fa-solid fa-pen-to-square"
                                 onclick="updateTotalPrice('{{ $node->idnode }}', '{{ $node->total_price ?? '' }}')"
@@ -845,10 +847,10 @@
                     responsive: true,
                     scales: {
                         x: {
-                            display: false 
+                            display: false
                         },
                         y: {
-                            display: false, 
+                            display: false,
                         }
                     },
                     plugins: {

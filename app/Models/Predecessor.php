@@ -25,7 +25,7 @@ class Predecessor extends Model
         return $this->belongsTo(Node::class, 'node_core', 'idnode');
     }
 
-    public function cabangNode()
+    public function nodeCabang()
     {
         return $this->belongsTo(Node::class, 'node_cabang', 'idnode');
     }

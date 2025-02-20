@@ -17,8 +17,10 @@ class NodeController extends Controller
         $projects = Project::findOrFail($id);
 
         $activities = Activity::where('idproject', $projects->idproject)
-            ->with(['subActivities.nodes'])
-            ->get();
+        ->with([
+            'subActivities.nodes.predecessors.nodeCabang'
+        ])
+        ->get();
 
         return view('detail-cpm', compact('projects', 'activities'));
     }
