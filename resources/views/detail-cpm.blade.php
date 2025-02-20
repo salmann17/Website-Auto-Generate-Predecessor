@@ -184,7 +184,7 @@
                                 <select name="syarat[]" class="bg-gray-600 text-white rounded-md p-1 w-64 h-7">
                                     <option value="">-</option>
                                     @foreach ($allNodes as $optionNode)
-                                    <option value="{{ $optionNode->idnode }}">{{ $optionNode->activity }}</option>
+                                    <option value="{{ $optionNode->idnode }}">{{ $optionNode->activity }} - {{ $optionNode->sub_activity_activity }}</option>
                                     @endforeach
                                 </select>
                                 <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
@@ -201,7 +201,7 @@
                                     {{-- Lalu tampilkan seluruh node activity dari $allNodes --}}
                                     @foreach ($allNodes as $optionNode)
                                     <option value="{{ $optionNode->idnode }}" {{ (isset($pred->nodeCabang->idnode) && $pred->nodeCabang->idnode == $optionNode->idnode) ? 'selected' : '' }}>
-                                        {{ $optionNode->activity }}
+                                        {{ $optionNode->activity }} - {{ $optionNode->sub_activity_activity }}
                                     </option>
                                     @endforeach
                                 </select>
