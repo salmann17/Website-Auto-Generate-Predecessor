@@ -20,478 +20,121 @@
             const container = element.closest('tr').querySelector('.dropdown-container');
             const newDropdown = document.createElement('div');
             newDropdown.classList.add('my-2');
-
             newDropdown.innerHTML = `
-                <select name="syarat[]" class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
-                    <option value="">-</option>
-
-                </select>
-                <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
-                <button type="button" onclick="removeDropdown(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button>
-            `;
-
+            <select name="syarat[]" class="bg-gray-600 text-white rounded-md p-1 w-64 h-7">
+                <option value="">-</option>
+                @foreach ($allNodes as $optionNode)
+                    <option value="{{ $optionNode->idnode }}">{{ $optionNode->activity }}</option>
+                @endforeach
+            </select>
+            <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
+            <button type="button" onclick="removeDropdown(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button>
+        `;
             container.appendChild(newDropdown);
         }
 
+        function savePredecessors(element) {
+            const row = element.closest('tr');
+            const nodeId = row.getAttribute('data-node-id');
+            let predecessorSelections = [];
+
+            row.querySelectorAll('select[name="syarat[]"]').forEach(function(select) {
+                if (select.value !== '') {
+                    predecessorSelections.push(select.value);
+                }
+            });
+
+            $.ajax({
+                url: "{{ route('nodes.update') }}", 
+                method: 'POST',
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    node_core: nodeId,
+                    predecessors: predecessorSelections
+                },
+                success: function(response) {
+                    Swal.fire('Success!', 'Data telah disimpan.', 'success');
+                    row.querySelectorAll('.dropdown-container').forEach(function(div) {
+                        const select = div.querySelector('select[name="syarat[]"]');
+                        if (select && select.value !== '' && !div.querySelector('button.bg-red-600')) {
+                            const minusBtn = document.createElement('button');
+                            minusBtn.type = 'button';
+                            minusBtn.className = 'bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1';
+                            minusBtn.textContent = '-';
+                            minusBtn.onclick = function() {
+                                removeDropdown(minusBtn);
+                            };
+                            div.appendChild(minusBtn);
+                            div.setAttribute('data-node-core', nodeId);
+                            div.setAttribute('data-node-cabang', select.value);
+                        }
+                    });
+                },
+                error: function(err) {
+                    Swal.fire('Error!', 'Gagal menyimpan data.', 'error');
+                }
+            });
+        }
 
         function removeDropdown(element) {
-            const container = element.closest('.dropdown-container');
-            const dropdownDiv = element.closest('div');
-            container.removeChild(dropdownDiv);
-        }
+            const dropdownDiv = element.closest('div.dropdown-container');
+            const row = element.closest('tr');
+            const nodeCore = dropdownDiv.getAttribute('data-node-core');
+            const nodeCabang = dropdownDiv.getAttribute('data-node-cabang');
+            const select = dropdownDiv.querySelector('select[name="syarat[]"]');
 
-        function editRows() {
-            const rows = document.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                const activityCell = row.cells[0];
-                const durasiCell = row.cells[1];
-                const id = row.dataset.id;
-
-                activityCell.innerHTML = `
-                    <input type="hidden" name="id[]" value="${id}">
-                    <input type="text" name="activity[]" value="${activityCell.textContent.trim()}" class="bg-gray-600 text-white rounded-md p-1 w-62 h-10">
-                `;
-                durasiCell.innerHTML = `
-                    <input type="number" name="durasi[]" value="${durasiCell.textContent.trim()}" class="bg-gray-600 text-white rounded-md p-1 w-10 h-10">
-                `;
-            });
-        }
-
-        function saveRows() {
-            const rows = document.querySelectorAll('tbody tr');
-            const data = [];
-            const projectId = document.getElementById('project_id').value;
-
-            rows.forEach(row => {
-                const id = row.dataset.id || null;
-                const prioritas = parseInt(row.dataset.prioritas);
-                const activity = row.querySelector('input[name="activity[]"]')?.value || row.cells[0].textContent.trim();
-                const durasi = row.querySelector('input[name="durasi[]"]')?.value || row.cells[1].textContent.trim();
-
-                const syarat = Array.from(row.querySelectorAll('.dropdown-container select'))
-                    .map(select => {
-                        const selectedOption = select.options[select.selectedIndex];
-                        return selectedOption.value;
-                    })
-                    .filter(value => value !== "");
-
-                data.push({
-                    id: id,
-                    prioritas: prioritas,
-                    activity: activity,
-                    durasi: durasi,
-                    syarat: syarat,
-                    project_idproject: projectId
+            if (nodeCore && nodeCabang && select.value !== "") {
+                Swal.fire({
+                    title: 'Anda yakin akan menghapus syarat ini?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '/predecessor/delete', 
+                            method: 'POST',
+                            data: {
+                                _token: "{{ csrf_token() }}",
+                                node_core: nodeCore,
+                                node_cabang: nodeCabang
+                            },
+                            success: function(response) {
+                                dropdownDiv.remove();
+                                Swal.fire('Deleted!', 'Data telah dihapus.', 'success');
+                                checkAndRestoreDefault(row);
+                            },
+                            error: function(err) {
+                                Swal.fire('Error!', 'Terjadi kesalahan saat menghapus data.', 'error');
+                            }
+                        });
+                    }
                 });
-            });
-
-            console.log("📤 Mengirim data:", JSON.stringify(data, null, 2));
-
-            $.ajax({
-                url: '/update-nodes',
-                type: 'POST',
-                contentType: 'application/json',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                data: JSON.stringify({
-                    data: data
-                }),
-                success: function(response) {
-                    Swal.fire({
-                        title: "Data Berhasil Disimpan!",
-                        text: "Perubahan telah tersimpan di database.",
-                        icon: "success",
-                        confirmButtonText: "OK"
-                    }).then(() => location.reload());
-                },
-                error: function(xhr) {
-                    console.log('❌ Error:', xhr.responseText);
-                    Swal.fire({
-                        title: "Gagal Menyimpan!",
-                        text: "Terjadi kesalahan, coba lagi.",
-                        icon: "error"
-                    });
-                }
-            });
+            } else {
+                dropdownDiv.remove();
+                checkAndRestoreDefault(row);
+            }
         }
 
-
-        function processTasks() {
-            const tasks = {};
-            const rows = document.querySelectorAll('tbody tr');
-            const idToActivity = {};
-            const figsize = parseInt(document.getElementById('figsize-input').value) || 10;
-
-            rows.forEach(row => {
-                const id = row.dataset.id;
-                const activity = row.cells[0].textContent.trim();
-                if (id) {
-                    idToActivity[id] = activity;
-                }
-            });
-
-            rows.forEach(row => {
-                const activity = row.cells[0].textContent.trim();
-                const durasi = parseInt(row.cells[1].textContent.trim(), 10);
-
-                const syarat = Array.from(row.cells[2].querySelectorAll('select'))
-                    .map(select => {
-                        const selectedOption = select.options[select.selectedIndex];
-                        return idToActivity[selectedOption.value] || "";
-                    })
-                    .filter(value => value !== "");
-
-                tasks[activity] = {
-                    nama: activity,
-                    durasi: durasi,
-                    syarat: syarat
-                };
-            });
-
-            Swal.fire({
-                title: 'Memproses Gambar CPM...',
-                text: 'Harap tunggu',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            console.log("📤 Data dikirim ke Flask:", JSON.stringify(tasks, null, 2));
-
-            $.ajax({
-                url: 'http://localhost:5000/run-cpm',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    tasks: tasks,
-                    figsize: figsize
-                }),
-                success: function(response) {
-                    console.log('✅ Data processed successfully', response);
-                    Swal.fire({
-                        title: "CPM berhasil dibuat!",
-                        text: "Silahkan tunggu hingga gambar muncul",
-                        icon: "success",
-                        confirmButtonText: "OK",
-                        timer: 3000
-                    });
-                    const container = document.getElementById('cy');
-                    container.innerHTML = `
-                <div class="panzoom-container" style="overflow: hidden; width: 100%; height: 100%;">
-                    <img src="${response.image}" alt="CPM Graph" 
-                        style="max-width: 100%; height: auto; display: block; margin: 0 auto;">
-                </div>
+        function checkAndRestoreDefault(row) {
+            const tdContainer = row.querySelector('td:nth-child(3)');
+            if (!tdContainer) return;
+            const dropdowns = tdContainer.querySelectorAll('.dropdown-container');
+            if (dropdowns.length === 0) {
+                const defaultContainer = document.createElement('div');
+                defaultContainer.classList.add('dropdown-container');
+                defaultContainer.innerHTML = `
+                <select name="syarat[]" class="bg-gray-600 text-white rounded-md p-1 w-64 h-7">
+                    <option value="">-</option>
+                    @foreach ($allNodes as $optionNode)
+                        <option value="{{ $optionNode->idnode }}">{{ $optionNode->activity }}</option>
+                    @endforeach
+                </select>
+                <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
             `;
-                    const img = container.querySelector('img');
-                    img.src = response.image;
-
-                    const elem = container.querySelector('img');
-                    const panzoom = Panzoom(elem, {
-                        maxScale: 5,
-                        minScale: 0.1,
-                        contain: 'outside',
-                        canvas: true
-                    });
-
-                    container.addEventListener('wheel', panzoom.zoomWithWheel);
-                    elem.addEventListener('mousedown', panzoom.startDrag);
-                    elem.addEventListener('dblclick', panzoom.reset);
-                },
-                error: function(xhr, status, error) {
-                    console.log('❌ Error processing data', xhr.responseText);
-                    Swal.fire({
-                        title: "Gagal memproses CPM!",
-                        text: "Terjadi kesalahan dalam pemrosesan data.",
-                        icon: "error",
-                        confirmButtonText: "Coba Lagi"
-                    });
-                }
-            });
-        }
-
-
-        function addRow(button) {
-            const currentRow = button.closest('tr');
-            const tbody = currentRow.closest('tbody');
-            const allRows = Array.from(tbody.querySelectorAll('tr'));
-
-            const currentPrioritas = parseInt(currentRow.dataset.prioritas);
-            const newRow = currentRow.cloneNode(true);
-
-            newRow.dataset.id = '';
-            newRow.dataset.prioritas = currentPrioritas + 1;
-            newRow.querySelector('input[name="activity[]"]').value = "New Activity";
-            newRow.querySelector('input[name="durasi[]"]').value = "0";
-
-            const dropdownContainer = newRow.querySelector('.dropdown-container');
-            dropdownContainer.innerHTML = `
-                <div class="my-2">
-                    <select class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
-                        <option value="">-</option>
-                        
-                    </select>
-                    <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
-                    <button type="button" onclick="removeDropdown(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button>
-                </div>
-            `;
-
-            currentRow.insertAdjacentElement('afterend', newRow);
-
-            let newPrioritas = currentPrioritas + 1;
-            allRows.forEach(row => {
-                let rowPrioritas = parseInt(row.dataset.prioritas);
-                if (rowPrioritas >= currentPrioritas + 1 && row !== newRow) {
-                    row.dataset.prioritas = ++newPrioritas;
-                }
-            });
-
-            console.log("Prioritas diperbarui:", Array.from(tbody.querySelectorAll('tr')).map(row => row.dataset.prioritas));
-        }
-
-
-        function removeRow(button) {
-            const currentRow = button.closest('tr');
-            const currentId = currentRow.dataset.id;
-            const currentPrioritas = parseInt(currentRow.dataset.prioritas);
-
-            Swal.fire({
-                title: 'Apakah Anda yakin?',
-                text: "Data yang dihapus tidak dapat dikembalikan!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, Hapus!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: '/delete-node',
-                        method: 'POST',
-                        data: {
-                            id: currentId,
-                            prioritas: currentPrioritas,
-                            _token: $('meta[name="csrf-token"]').attr('content')
-                        },
-                        success: function(response) {
-                            currentRow.remove();
-
-                            const tbody = document.querySelector('tbody');
-                            const rows = Array.from(tbody.querySelectorAll('tr'));
-
-                            rows.forEach(row => {
-                                const rowPrioritas = parseInt(row.dataset.prioritas);
-                                if (rowPrioritas > currentPrioritas) {
-                                    row.dataset.prioritas = rowPrioritas - 1;
-                                }
-                            });
-
-                            rows.forEach(row => {
-                                const selects = row.querySelectorAll('.dropdown-container select');
-                                selects.forEach(select => {
-                                    const selectedValue = select.value;
-                                    if (selectedValue === currentId) {
-                                        if (select.options.length > 1) {
-                                            select.selectedIndex = 0;
-                                        }
-                                    }
-                                });
-                            });
-
-                            rows.sort((a, b) => {
-                                return parseInt(a.dataset.prioritas) - parseInt(b.dataset.prioritas);
-                            });
-
-                            tbody.innerHTML = '';
-                            rows.forEach(row => tbody.appendChild(row));
-
-                            Swal.fire(
-                                'Terhapus!',
-                                'Data berhasil dihapus.',
-                                'success'
-                            );
-                        },
-                        error: function(xhr) {
-                            Swal.fire(
-                                'Gagal!',
-                                'Terjadi kesalahan saat menghapus data.',
-                                'error'
-                            );
-                        }
-                    });
-                }
-            });
-        }
-
-        function exportExcel2() {
-            Swal.fire({
-                title: 'Pilih Rentang Tanggal',
-                html: `<div class="text-left">
-            <label class="block mb-2">Tanggal Mulai:</label>
-            <input type="date" id="start-date" class="swal2-input mb-4" required>
-            <label class="block mb-2">Tanggal Akhir:</label>
-            <input type="date" id="end-date" class="swal2-input" required>
-        </div>`,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: 'Generate Excel',
-                preConfirm: () => {
-                    const startDate = document.getElementById('start-date').value;
-                    const endDate = document.getElementById('end-date').value;
-
-                    if (!startDate || !endDate) {
-                        Swal.showValidationMessage('Harap isi kedua tanggal!');
-                        return null;
-                    }
-                    if (new Date(startDate) > new Date(endDate)) {
-                        Swal.showValidationMessage('Tanggal mulai tidak boleh lebih akhir dari tanggal akhir!');
-                        return null;
-                    }
-
-                    return {
-                        startDate,
-                        endDate
-                    };
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const {
-                        startDate,
-                        endDate
-                    } = result.value;
-                    const start = new Date(startDate);
-                    const end = new Date(endDate);
-                    const diffWeeks = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24 * 7));
-
-                    const weekHeaders = [];
-                    const startDateHeaders = [];
-                    for (let i = 0; i < diffWeeks; i++) {
-                        let weekStart = new Date(start);
-                        weekStart.setDate(start.getDate() + (i * 7));
-
-                        weekHeaders.push(`Minggu ${i + 1}`);
-                        startDateHeaders.push(weekStart.toISOString().split('T')[0]);
-                    }
-
-                    let data = [];
-                    data.push(["Project Name:", document.getElementById("project_name").value]);
-                    data.push(["Project Location:", document.getElementById("project_location").value]);
-                    data.push(["Periode:", `${startDate} s/d ${endDate}`]);
-                    data.push([]);
-
-                    const mainHeaders = ["No", "Activity", "Durasi", "Syarat", "Schedule"];
-                    const subHeaders = ["", "", "", "", ...weekHeaders];
-                    const startDateSubHeaders = ["", "", "", "", ...startDateHeaders];
-
-                    data.push(mainHeaders);
-                    data.push(subHeaders);
-                    data.push(startDateSubHeaders);
-
-                    let table = document.getElementById("tableData");
-                    let rows = table.getElementsByTagName("tr");
-
-                    for (let i = 1; i < rows.length; i++) {
-                        let rowData = [];
-                        let cells = rows[i].getElementsByTagName("td");
-                        rowData.push(i);
-                        rowData.push(cells[0].innerText.trim());
-                        rowData.push(cells[1].innerText.trim());
-
-                        let syaratValues = [];
-                        let selects = cells[2].querySelectorAll('select');
-                        selects.forEach(select => {
-                            let selectedValue = select.options[select.selectedIndex].text;
-                            if (selectedValue && selectedValue !== "-") {
-                                syaratValues.push(selectedValue);
-                            }
-                        });
-                        rowData.push(syaratValues.join(", "));
-
-                        for (let w = 0; w < diffWeeks; w++) {
-                            rowData.push("");
-                        }
-
-                        data.push(rowData);
-                    }
-
-                    const workbook = new ExcelJS.Workbook();
-                    const worksheet = workbook.addWorksheet('Schedule CPM');
-                    worksheet.addRows(data);
-
-                    worksheet.mergeCells('A5:A7');
-                    worksheet.mergeCells('B5:B7');
-                    worksheet.mergeCells('C5:C7');
-                    worksheet.mergeCells('D5:D7');
-
-                    const lastCol = String.fromCharCode(69 + diffWeeks - 1);
-                    worksheet.mergeCells(`E5:${lastCol}5`);
-
-                    for (let i = 0; i < diffWeeks; i++) {
-                        let colLetter = String.fromCharCode(69 + i);
-                    }
-
-                    worksheet.eachRow((row, rowNumber) => {
-                        row.eachCell(cell => {
-                            cell.alignment = {
-                                vertical: 'middle',
-                                horizontal: 'center'
-                            };
-                            cell.border = {
-                                top: {
-                                    style: 'thin'
-                                },
-                                left: {
-                                    style: 'thin'
-                                },
-                                bottom: {
-                                    style: 'thin'
-                                },
-                                right: {
-                                    style: 'thin'
-                                }
-                            };
-                            if (rowNumber === 5) {
-                                cell.font = {
-                                    bold: true
-                                };
-                                cell.fill = {
-                                    type: 'pattern',
-                                    pattern: 'solid',
-                                    fgColor: {
-                                        argb: 'FFD3D3D3'
-                                    }
-                                };
-                            }
-                        });
-                    });
-
-                    worksheet.columns.forEach(column => {
-                        let maxLength = 0;
-                        column.eachCell({
-                            includeEmpty: true
-                        }, cell => {
-                            const columnLength = cell.value ? cell.value.toString().length : 10;
-                            if (columnLength > maxLength) {
-                                maxLength = columnLength;
-                            }
-                        });
-                        column.width = maxLength < 10 ? 10 : maxLength + 2;
-                    });
-
-                    workbook.xlsx.writeBuffer().then(buffer => {
-                        const blob = new Blob([buffer], {
-                            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                        });
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `CPM_Schedule_${startDate}_${endDate}.xlsx`;
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                    });
-                }
-            });
+                tdContainer.appendChild(defaultContainer);
+            }
         }
     </script>
 </head>
@@ -531,14 +174,14 @@
                         <td class="p-4 pl-8">• {{ $subActivity->activity }}</td>
                     </tr>
                     @foreach ($subActivity->nodes as $node)
-                    <tr class="bg-gray-800 text-gray-400 transition duration-150">
+                    <tr class="bg-gray-800 text-gray-400 transition duration-150" data-node-id="{{ $node->idnode }}">
                         <td class="p-4 pl-12">- {{ $node->activity }}</td>
                         <td class="p-4">{{ $node->durasi }}</td>
                         <td>
                             @if($node->predecessors->isEmpty())
                             {{-- Node tidak memiliki predecessor --}}
                             <div class="dropdown-container">
-                                <select name="syarat[]" class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
+                                <select name="syarat[]" class="bg-gray-600 text-white rounded-md p-1 w-64 h-7">
                                     <option value="">-</option>
                                     @foreach ($allNodes as $optionNode)
                                     <option value="{{ $optionNode->idnode }}">{{ $optionNode->activity }}</option>
@@ -549,24 +192,25 @@
                             @else
                             {{-- Node memiliki satu atau lebih predecessor --}}
                             @foreach ($node->predecessors as $pred)
-                            <div class="dropdown-container">
-                                <select name="syarat[]" class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
+                            <div class="dropdown-container" data-node-core="{{ $node->idnode }}" data-node-cabang="{{ $pred->nodeCabang->idnode }}">
+                                <select name="syarat[]" class="bg-gray-600 text-white rounded-md p-1 w-64 h-7">
                                     {{-- Tampilkan predecessor yang ada sebagai option pertama --}}
                                     <option value="{{ $pred->nodeCabang->idnode ?? '' }}">
                                         {{ $pred->nodeCabang->activity ?? '-' }}
                                     </option>
                                     {{-- Lalu tampilkan seluruh node activity dari $allNodes --}}
                                     @foreach ($allNodes as $optionNode)
-                                    <option value="{{ $optionNode->idnode }}"
-                                        {{ (isset($pred->nodeCabang->idnode) && $pred->nodeCabang->idnode == $optionNode->idnode) ? 'selected' : '' }}>
+                                    <option value="{{ $optionNode->idnode }}" {{ (isset($pred->nodeCabang->idnode) && $pred->nodeCabang->idnode == $optionNode->idnode) ? 'selected' : '' }}>
                                         {{ $optionNode->activity }}
                                     </option>
                                     @endforeach
                                 </select>
                                 <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
+                                <button type="button" onclick="removeDropdown(this)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md mr-1">-</button>
                             </div>
                             @endforeach
                             @endif
+                            <button type="button" onclick="savePredecessors(this)" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md">Save</button>
                         </td>
 
                         <td> Rp.{{$node->total_price}}

@@ -21,3 +21,7 @@ Route::post('/saveNodes', [ProjectController::class, 'saveNodes']);
 
 Route::post('/update-total-price', [NodeController::class, 'updateTotalPrice'])
     ->name('updateTotalPrice');
+
+Route::post('/predecessor/update', [NodeController::class, 'update'])->name('nodes.update');
+Route::post('/predecessor/delete', [NodeController::class, 'delete'])->name('nodes.delete');
+    

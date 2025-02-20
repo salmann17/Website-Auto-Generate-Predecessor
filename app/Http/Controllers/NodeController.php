@@ -17,16 +17,16 @@ class NodeController extends Controller
         $projects = Project::findOrFail($id);
 
         $activities = Activity::where('idproject', $projects->idproject)
-        ->with([
-            'subActivities.nodes.predecessors.nodeCabang'
-        ])
-        ->get();
+            ->with([
+                'subActivities.nodes.predecessors.nodeCabang'
+            ])
+            ->get();
 
         $allNodes = Node::join('sub_activity', 'nodes.id_sub_activity', '=', 'sub_activity.idsub_activity')
-        ->join('activity', 'sub_activity.idactivity', '=', 'activity.idactivity')
-        ->where('activity.idproject', $projects->idproject)
-        ->select('nodes.*')
-        ->get();
+            ->join('activity', 'sub_activity.idactivity', '=', 'activity.idactivity')
+            ->where('activity.idproject', $projects->idproject)
+            ->select('nodes.*')
+            ->get();
 
         return view('detail-cpm', compact('projects', 'activities', 'allNodes'));
     }
@@ -54,7 +54,7 @@ class NodeController extends Controller
         if ($sumTotalPrice > 0) {
             $nodes = Node::all();
             foreach ($nodes as $nodeUpdate) {
-                $nodeUpdate->bobot_rencana = round(($nodeUpdate->total_price / $sumTotalPrice)*100, 2);
+                $nodeUpdate->bobot_rencana = round(($nodeUpdate->total_price / $sumTotalPrice) * 100, 2);
                 $nodeUpdate->save();
             }
         } else {
@@ -65,5 +65,63 @@ class NodeController extends Controller
             'success' => true,
             'message' => 'Total Price dan Bobot berhasil diperbarui.'
         ]);
+    }
+
+    public function update(Request $request)
+    {
+        $request->validate([
+            'node_core'    => 'required|integer',
+            'predecessors' => 'nullable|array'
+        ]);
+
+        $nodeCore = $request->input('node_core');
+        $predecessorIds = $request->input('predecessors', []);
+
+        Predecessor::where('node_core', $nodeCore)->delete();
+
+        if (!empty($predecessorIds)) {
+            foreach ($predecessorIds as $nodeCabang) {
+                if ($nodeCabang != '') {
+                    Predecessor::create([
+                        'node_core'   => $nodeCore,
+                        'node_cabang' => $nodeCabang,
+                    ]);
+                }
+            }
+        }
+        
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Predecessors updated successfully'
+        ]);
+    }
+
+
+    public function delete(Request $request)
+    {
+        $request->validate([
+            'node_core'   => 'required|integer',
+            'node_cabang' => 'required|integer'
+        ]);
+
+        $nodeCore   = $request->input('node_core');
+        $nodeCabang = $request->input('node_cabang');
+
+        $deleted = Predecessor::where('node_core', $nodeCore)
+            ->where('node_cabang', $nodeCabang)
+            ->delete();
+
+        if ($deleted) {
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Predecessor deleted successfully'
+            ]);
+        } else {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Predecessor not found'
+            ], 404);
+        }
     }
 }
