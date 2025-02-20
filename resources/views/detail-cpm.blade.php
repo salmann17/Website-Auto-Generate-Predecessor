@@ -45,7 +45,7 @@
             });
 
             $.ajax({
-                url: "{{ route('nodes.update') }}", 
+                url: "{{ route('nodes.update') }}",
                 method: 'POST',
                 data: {
                     _token: "{{ csrf_token() }}",
@@ -93,7 +93,7 @@
                 }).then((result) => {
                     if (result.isConfirmed) {
                         $.ajax({
-                            url: '/predecessor/delete', 
+                            url: '/predecessor/delete',
                             method: 'POST',
                             data: {
                                 _token: "{{ csrf_token() }}",
@@ -174,7 +174,7 @@
                         <td class="p-4 pl-8">• {{ $subActivity->activity }}</td>
                     </tr>
                     @foreach ($subActivity->nodes as $node)
-                    <tr class="bg-gray-800 text-gray-400 transition duration-150" data-node-id="{{ $node->idnode }}">
+                    <tr class="bg-gray-800 text-gray-400 transition duration-150" data-node-id="{{ $node->idnode }}" data-prerequisites='["Activity A"]'>
                         <td class="p-4 pl-12">- {{ $node->activity }}</td>
                         <td class="p-4">{{ $node->durasi }}</td>
                         <td>
@@ -247,6 +247,28 @@
             }
             return letters;
         }
+    }
+
+    // Fungsi untuk menghitung jadwal dengan topological sort
+    function computeSchedule(activities) {
+        const activityMap = new Map(activities.map(a => [a.name, a]));
+        let maxDay = 0;
+
+        activities.forEach(activity => {
+            if (activity.prerequisites.length > 0) {
+                const prerequisiteDays = activity.prerequisites.map(p => {
+                    const prereq = activityMap.get(p);
+                    return prereq ? prereq.endDay : 0;
+                });
+                activity.startDay = Math.max(...prerequisiteDays) + 1;
+            } else {
+                activity.startDay = 0;
+            }
+            activity.endDay = activity.startDay + activity.duration - 1;
+            maxDay = Math.max(maxDay, activity.endDay);
+        });
+
+        return maxDay;
     }
 
     function exportExcel() {
@@ -393,6 +415,42 @@
                     sBobots.push(parseFloat(bobot) || 0);
                 }
             });
+
+            const activities = [];
+            rows.forEach(row => {
+                const cells = row.getElementsByTagName("td");
+                const prerequisites = JSON.parse(row.dataset.prerequisites || '[]'); // Asumsi data disimpan di data-prerequisites
+                const activity = {
+                    name: cells[0].innerText.trim(),
+                    duration: parseInt(cells[1]?.innerText || 0),
+                    bobot: parseFloat(cells[4]?.innerText.replace('%', '') || 0),
+                    prerequisites: prerequisites,
+                    startDay: 0,
+                    endDay: 0
+                };
+                activities.push(activity);
+            });
+            const totalProjectDays = computeSchedule(activities);
+            const dailyContributions = new Array(totalProjectDays + 1).fill(0);
+            activities.forEach(activity => {
+                const dailyBobot = activity.bobot / activity.duration;
+                for (let day = activity.startDay; day <= activity.endDay; day++) {
+                    dailyContributions[day] += dailyBobot;
+                }
+            });
+            const weeklyTotals = [];
+            for (let week = 0; week < diffWeeks; week++) {
+                const weekStart = week * 7;
+                const weekEnd = weekStart + 6;
+                let total = 0;
+                for (let day = weekStart; day <= weekEnd; day++) {
+                    if (day <= totalProjectDays) total += dailyContributions[day];
+                }
+                weeklyTotals.push(total.toFixed(2) + "%");
+            }
+
+            // Tambahkan baris total
+            data.push(["Total Bobot", "", "", "", "", "", ...weeklyTotals]);
 
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet('Schedule CPM');
