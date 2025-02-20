@@ -535,16 +535,38 @@
                         <td class="p-4 pl-12">- {{ $node->activity }}</td>
                         <td class="p-4">{{ $node->durasi }}</td>
                         <td>
+                            @if($node->predecessors->isEmpty())
+                            {{-- Node tidak memiliki predecessor --}}
+                            <div class="dropdown-container">
+                                <select name="syarat[]" class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
+                                    <option value="">-</option>
+                                    @foreach ($allNodes as $optionNode)
+                                    <option value="{{ $optionNode->idnode }}">{{ $optionNode->activity }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
+                            </div>
+                            @else
+                            {{-- Node memiliki satu atau lebih predecessor --}}
                             @foreach ($node->predecessors as $pred)
                             <div class="dropdown-container">
-                                <select class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
+                                <select name="syarat[]" class="bg-gray-600 text-white rounded-md p-1 w-40 h-7">
+                                    {{-- Tampilkan predecessor yang ada sebagai option pertama --}}
                                     <option value="{{ $pred->nodeCabang->idnode ?? '' }}">
                                         {{ $pred->nodeCabang->activity ?? '-' }}
                                     </option>
+                                    {{-- Lalu tampilkan seluruh node activity dari $allNodes --}}
+                                    @foreach ($allNodes as $optionNode)
+                                    <option value="{{ $optionNode->idnode }}"
+                                        {{ (isset($pred->nodeCabang->idnode) && $pred->nodeCabang->idnode == $optionNode->idnode) ? 'selected' : '' }}>
+                                        {{ $optionNode->activity }}
+                                    </option>
+                                    @endforeach
                                 </select>
+                                <button type="button" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
                             </div>
                             @endforeach
-                            <button id="add-dropdown-btn" onclick="addDropdown(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md mr-1">+</button>
+                            @endif
                         </td>
 
                         <td> Rp.{{$node->total_price}}

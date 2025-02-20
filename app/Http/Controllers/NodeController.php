@@ -22,7 +22,13 @@ class NodeController extends Controller
         ])
         ->get();
 
-        return view('detail-cpm', compact('projects', 'activities'));
+        $allNodes = Node::join('sub_activity', 'nodes.id_sub_activity', '=', 'sub_activity.idsub_activity')
+        ->join('activity', 'sub_activity.idactivity', '=', 'activity.idactivity')
+        ->where('activity.idproject', $projects->idproject)
+        ->select('nodes.*')
+        ->get();
+
+        return view('detail-cpm', compact('projects', 'activities', 'allNodes'));
     }
 
     public function updateTotalPrice(Request $request)
