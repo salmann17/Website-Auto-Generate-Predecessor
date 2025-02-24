@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\Activity;
 use App\Models\SubActivity;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 
 class NodeController extends Controller
@@ -126,6 +127,59 @@ class NodeController extends Controller
                 'status'  => 'error',
                 'message' => 'Predecessor not found'
             ], 404);
+        }
+    }
+    public function saveNodes(Request $request)
+    {
+        $validated = $request->validate([
+            'project_id' => 'required|integer',
+            'activities' => 'required|array'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            foreach ($request->activities as $activityData) {
+                $activity = Activity::create([
+                    'activity' => $activityData['name'],
+                    'idproject' => $request->project_id,
+                    'durasi' => $activityData['duration'] ?? 0
+                ]);
+
+                if (isset($activityData['sub_activities'])) {
+                    foreach ($activityData['sub_activities'] as $subData) {
+                        $subActivity = SubActivity::create([
+                            'activity' => $subData['name'],
+                            'idactivity' => $activity->id,
+                            'durasi' => $subData['duration'] ?? 0
+                        ]);
+
+                        if (isset($subData['nodes'])) {
+                            foreach ($subData['nodes'] as $nodeData) {
+                                Node::create([
+                                    'activity' => $nodeData['name'],
+                                    'id_sub_activity' => $subActivity->id,
+                                    'durasi' => $nodeData['duration'] ?? 0
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Data berhasil disimpan',
+                'success' => true
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Gagal menyimpan data: ' . $e->getMessage(),
+                'success' => false
+            ], 500);
         }
     }
 }

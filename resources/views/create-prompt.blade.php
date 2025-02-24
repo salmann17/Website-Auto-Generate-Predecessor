@@ -99,28 +99,42 @@
         }
 
         async function saveData(parsedData) {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-            const projectId = document.getElementById("project-id").value;
-
             try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const projectId = document.getElementById("project-id").value;
+
+                const payload = {
+                    project_id: projectId,
+                    activities: parsedData 
+                };
+
                 const response = await fetch('/saveNodes', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': csrfToken
                     },
-                    body: JSON.stringify({
-                        project_id: projectId,
-                        activities: parsedData
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 const result = await response.json();
-                if (!response.ok) throw new Error(result.message);
 
-                Swal.fire('Success!', 'Data saved successfully', 'success');
+                if (!response.ok) {
+                    throw new Error(result.message || 'Gagal menyimpan data');
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Sukses!',
+                    text: result.message
+                });
             } catch (error) {
-                Swal.fire('Error!', error.message, 'error');
+                console.error("Error saat menyimpan data:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    text: error.message
+                });
             }
         }
 
