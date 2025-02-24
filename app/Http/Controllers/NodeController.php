@@ -12,6 +12,9 @@ use Illuminate\Http\Request;
 
 class NodeController extends Controller
 {
+    public function index(){
+        return view('create-project');
+    }
     public function show($id)
     {
         $projects = Project::findOrFail($id);
