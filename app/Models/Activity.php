@@ -17,7 +17,8 @@ class Activity extends Model
 
     protected $fillable = [
         'activity',
-        'idproject'
+        'idproject',
+        'durasi'
     ];
 
     public function project()

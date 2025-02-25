@@ -14,14 +14,12 @@ def parse_hierarchy(row):
     if re.match(r'^\d+\.\s', activity):
         return {
             'type': 'activity',
-            'name': re.sub(r'^\d+\.\s', '', activity),
-            'duration': duration
+            'name': re.sub(r'^\d+\.\s', '', activity)
         }
     elif re.match(r'^•\s', activity):
         return {
             'type': 'sub_activity',
-            'name': re.sub(r'^•\s', '', activity),
-            'duration': duration
+            'name': re.sub(r'^•\s', '', activity)
         }
     elif re.match(r'^-\s', activity):
         return {

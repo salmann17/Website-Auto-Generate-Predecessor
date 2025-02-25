@@ -11,47 +11,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script>
-
-    </script>
-</head>
-
-<body class="bg-gradient-to-tl from-black via-gray-900 to-blue-900 min-h-screen p-8">
-    <h1 class="text-xl font-extrabold text-white mb-2 text-center">
-        Create Prompt for {{ $nama }}
-    </h1>
-
-    <div class="max-w-4xl mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
-        <div class="mb-4">
-            <label for="excel-file" class="block text-white mb-2">Upload File Excel:</label>
-            <input
-                type="file"
-                id="excel-file"
-                accept=".xls,.xlsx"
-                class="text-white" />
-        </div>
-
-        <div class="flex gap-2 mb-4">
-            <button
-                onclick="uploadAndParseFile()"
-                class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
-                <i class="fa-solid fa-upload"></i> Upload &amp; Parse
-            </button>
-
-            <a
-                href="{{ url('/detail-cpm', $id) }}"
-                class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition">
-                <i class="fa-solid fa-pen"></i>
-            </a>
-
-            <input type="hidden" id="project-id" value="{{ $id }}">
-        </div>
-
-        <div
-            id="result-box"
-            class="h-[700px] overflow-y-auto bg-gray-700 p-4 rounded text-white"></div>
-    </div>
-
-    <script>
         async function uploadAndParseFile() {
             Swal.fire({
                 title: 'Memproses File...',
@@ -105,14 +64,15 @@
 
                 const payload = {
                     project_id: projectId,
-                    activities: parsedData 
+                    activities: parsedData
                 };
 
-                const response = await fetch('/saveNodes', {
+                const response = await fetch('http://127.0.0.1:8000/saveNodes', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify(payload)
                 });
@@ -182,6 +142,46 @@
             resultBox.innerHTML = htmlContent;
             resultBox.scrollTop = resultBox.scrollHeight;
         }
+    </script>
+</head>
+
+<body class="bg-gradient-to-tl from-black via-gray-900 to-blue-900 min-h-screen p-8">
+    <h1 class="text-xl font-extrabold text-white mb-2 text-center">
+        Create Prompt for {{ $nama }}
+    </h1>
+    <input type="hidden" id="project-id" value="{{ $id }}">
+
+    <div class="max-w-4xl mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
+        <div class="mb-4">
+            <label for="excel-file" class="block text-white mb-2">Upload File Excel:</label>
+            <input
+                type="file"
+                id="excel-file"
+                accept=".xls,.xlsx"
+                class="text-white" />
+        </div>
+
+        <div class="flex gap-2 mb-4">
+            <button
+                onclick="uploadAndParseFile()"
+                class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
+                <i class="fa-solid fa-upload"></i> Upload &amp; Parse
+            </button>
+
+            <a
+                href="{{ url('/detail-cpm', $id) }}"
+                class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition">
+                <i class="fa-solid fa-pen"></i>
+            </a>
+        </div>
+
+        <div
+            id="result-box"
+            class="h-[700px] overflow-y-auto bg-gray-700 p-4 rounded text-white"></div>
+    </div>
+
+    <script>
+        
     </script>
 </body>
 

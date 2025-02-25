@@ -39,7 +39,4 @@ class Node extends Model
     {
         return $this->hasMany(Predecessor::class, 'node_cabang', 'idnode');
     }
-
-
-
 }

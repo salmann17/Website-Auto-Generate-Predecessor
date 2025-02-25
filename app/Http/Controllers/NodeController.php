@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class NodeController extends Controller
 {
-    public function index(){
+    public function index()
+    {
         return view('create-project');
     }
     public function show($id)
@@ -129,6 +130,7 @@ class NodeController extends Controller
             ], 404);
         }
     }
+
     public function saveNodes(Request $request)
     {
         $validated = $request->validate([
@@ -140,26 +142,30 @@ class NodeController extends Controller
 
         try {
             foreach ($request->activities as $activityData) {
+                // Buat record Activity tanpa durasi
                 $activity = Activity::create([
-                    'activity' => $activityData['name'],
-                    'idproject' => $request->project_id,
-                    'durasi' => $activityData['duration'] ?? 0
+                    'activity'  => $activityData['name'],
+                    'idproject' => $request->project_id
                 ]);
 
+                // Cek apakah ada sub_activities
                 if (isset($activityData['sub_activities'])) {
                     foreach ($activityData['sub_activities'] as $subData) {
+                        // Buat record SubActivity tanpa durasi
                         $subActivity = SubActivity::create([
-                            'activity' => $subData['name'],
-                            'idactivity' => $activity->id,
-                            'durasi' => $subData['duration'] ?? 0
+                            'activity'   => $subData['name'],
+                            // Gunakan primaryKey yang benar
+                            'idactivity' => $activity->idactivity
                         ]);
 
+                        // Cek apakah ada nodes
                         if (isset($subData['nodes'])) {
                             foreach ($subData['nodes'] as $nodeData) {
+                                // Hanya di Node kita masukkan durasi
                                 Node::create([
-                                    'activity' => $nodeData['name'],
-                                    'id_sub_activity' => $subActivity->id,
-                                    'durasi' => $nodeData['duration'] ?? 0
+                                    'activity'        => $nodeData['name'],
+                                    'id_sub_activity' => $subActivity->idsub_activity,
+                                    'durasi'          => $nodeData['duration'] ?? 0
                                 ]);
                             }
                         }
@@ -173,7 +179,6 @@ class NodeController extends Controller
                 'message' => 'Data berhasil disimpan',
                 'success' => true
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([

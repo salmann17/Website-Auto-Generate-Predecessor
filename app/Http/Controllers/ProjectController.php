@@ -44,7 +44,7 @@ class ProjectController extends Controller
             'deskripsi' => $request->deskripsi,
         ]);
 
-        return view('create-prompt', ['id' => $project->id, 'nama' => $project->nama])
+        return view('create-prompt', ['id' => $project->idproject, 'nama' => $project->nama])
             ->with('success', 'Project berhasil ditambahkan!');
     }
 
