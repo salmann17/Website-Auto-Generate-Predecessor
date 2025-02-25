@@ -29,6 +29,4 @@ class Project extends Model
     {
         return $this->hasMany(Activity::class, 'idproject', 'idproject');
     }
-
-
 }

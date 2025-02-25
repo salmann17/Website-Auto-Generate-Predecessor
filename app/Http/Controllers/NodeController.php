@@ -8,10 +8,15 @@ use App\Models\Project;
 use App\Models\Activity;
 use App\Models\SubActivity;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 
 class NodeController extends Controller
 {
+    public function index()
+    {
+        return view('create-project');
+    }
     public function show($id)
     {
         $projects = Project::findOrFail($id);
@@ -123,6 +128,63 @@ class NodeController extends Controller
                 'status'  => 'error',
                 'message' => 'Predecessor not found'
             ], 404);
+        }
+    }
+
+    public function saveNodes(Request $request)
+    {
+        $validated = $request->validate([
+            'project_id' => 'required|integer',
+            'activities' => 'required|array'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            foreach ($request->activities as $activityData) {
+                // Buat record Activity tanpa durasi
+                $activity = Activity::create([
+                    'activity'  => $activityData['name'],
+                    'idproject' => $request->project_id
+                ]);
+
+                // Cek apakah ada sub_activities
+                if (isset($activityData['sub_activities'])) {
+                    foreach ($activityData['sub_activities'] as $subData) {
+                        // Buat record SubActivity tanpa durasi
+                        $subActivity = SubActivity::create([
+                            'activity'   => $subData['name'],
+                            // Gunakan primaryKey yang benar
+                            'idactivity' => $activity->idactivity
+                        ]);
+
+                        // Cek apakah ada nodes
+                        if (isset($subData['nodes'])) {
+                            foreach ($subData['nodes'] as $nodeData) {
+                                // Hanya di Node kita masukkan durasi
+                                Node::create([
+                                    'activity'        => $nodeData['name'],
+                                    'id_sub_activity' => $subActivity->idsub_activity,
+                                    'durasi'          => $nodeData['duration'] ?? 0
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Data berhasil disimpan',
+                'success' => true
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Gagal menyimpan data: ' . $e->getMessage(),
+                'success' => false
+            ], 500);
         }
     }
 }

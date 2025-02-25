@@ -11,165 +11,183 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script>
-        async function sendMessage() {
+        async function uploadAndParseFile() {
             Swal.fire({
-                title: 'Menyimpan Data...',
+                title: 'Memproses File...',
                 text: 'Harap tunggu',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
                 }
             });
-            const input = document.getElementById("chat-input");
-            const message = input.value.trim();
 
-            if (!message) return;
-
-            addMessage(message, 'user');
-
-            try {
-                const response = await fetch("http://127.0.0.1:5025/process", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        prompt: message
-                    })
-                });
-
-                if (!response.ok) throw new Error('Gagal memproses');
-
-                const data = await response.json();
-                console.log("Data diterima:", data.data);
-
-                const tableHTML = generateTableHTML(data.data);
-                addMessage(tableHTML, 'bot');
-
-                await saveData(data.data);
-
-            } catch (error) {
-                console.error(error);
-                addMessage(`Error: ${error.message}`, 'bot');
+            const fileInput = document.getElementById('excel-file');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                Swal.close();
+                Swal.fire('Error', 'Pilih file Excel terlebih dahulu', 'error');
+                return;
             }
 
-            input.value = '';
-            adjustHeight(input);
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch("http://127.0.0.1:5005/api/parse-excel", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Gagal memproses file di API Python');
+                }
+
+                const result = await response.json();
+                console.log("Data diterima dari Flask:", result.data);
+
+                const tableHTML = generateTableHTML(result.data);
+                showResult(tableHTML);
+
+                await saveData(result.data);
+
+                Swal.close();
+            } catch (error) {
+                console.error("Error:", error);
+                Swal.close();
+                Swal.fire('Error', error.message, 'error');
+            }
         }
 
-        async function saveData(tableData) {
-            console.log("Menyimpan data:", tableData);
-
+        async function saveData(parsedData) {
             try {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                 const projectId = document.getElementById("project-id").value;
+
                 const payload = {
-                    project_id: projectId, 
-                    nodes: tableData 
+                    project_id: projectId,
+                    activities: parsedData
                 };
-                const response = await $.ajax({
-                    url: '/saveNodes',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(payload),
+
+                const response = await fetch('http://127.0.0.1:8000/saveNodes', {
+                    method: 'POST',
                     headers: {
-                        'X-CSRF-TOKEN': csrfToken
-                    }
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
                 });
 
-                console.log("Data berhasil disimpan:", response);
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Gagal menyimpan data');
+                }
 
                 Swal.fire({
                     icon: 'success',
                     title: 'Sukses!',
-                    text: response.message
+                    text: result.message
                 });
-
-            } catch (xhr) {
-                console.error("Error menyimpan data:", xhr);
-
+            } catch (error) {
+                console.error("Error saat menyimpan data:", error);
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal!',
-                    text: xhr.responseJSON?.message || 'Terjadi kesalahan saat menyimpan data'
+                    text: error.message
                 });
             }
         }
 
-
-
         function generateTableHTML(data) {
-            const filteredData = data.map(item => ({
-                Activity: item.Activity,
-                Duration: item.Duration,
-                Predecessors: item.Predecessors
-            }));
-            console.log(data.data);
+            let html = '<table class="min-w-full bg-gray-700 text-white border-collapse">';
+            html += `
+        <thead>
+            <tr>
+                <th class="border p-2">Activity</th>
+                <th class="border p-2">Duration</th>
+            </tr>
+        </thead>
+        <tbody>`;
 
-            return `
-        <div class="overflow-x-auto">
-            <table class="min-w-full bg-gray-700 text-white">
-                <thead>
+            data.forEach(activity => {
+                html += `
+            <tr class="bg-gray-600">
+                <td class="border p-2 font-bold">${activity.name}</td>
+                <td class="border p-2">${activity.duration}</td>
+            </tr>`;
+
+                activity.sub_activities.forEach(sub => {
+                    html += `
+                <tr class="bg-gray-500">
+                    <td class="border p-2 pl-6">• ${sub.name}</td>
+                    <td class="border p-2">${sub.duration}</td>
+                </tr>`;
+
+                    sub.nodes.forEach(node => {
+                        html += `
                     <tr>
-                        ${['Activity', 'Duration', 'Predecessors'].map(col => 
-                            `<th class="px-4 py-2 border">${col}</th>`
-                        ).join('')}
-                    </tr>
-                </thead>
-                <tbody>
-                    ${filteredData.map(row => `
-                        <tr>
-                            <td class="px-4 py-2 border">${row.Activity}</td>
-                            <td class="px-4 py-2 border">${row.Duration}</td>
-                            <td class="px-4 py-2 border">${row.Predecessors}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
-    `;
+                        <td class="border p-2 pl-12">- ${node.name}</td>
+                        <td class="border p-2">${node.duration}</td>
+                    </tr>`;
+                    });
+                });
+            });
+
+            html += '</tbody></table>';
+            return html;
         }
 
-        function addMessage(content, sender) {
-            const chatBox = document.getElementById("chat-box");
-            const messageDiv = document.createElement("div");
-            messageDiv.className = `flex justify-${sender === 'user' ? 'end' : 'start'} mb-4`;
-            messageDiv.innerHTML = `
-                <div class="max-w-md p-3 rounded-lg ${sender === 'user' ? 'bg-blue-500' : 'bg-gray-700'}">
-                    ${content}
-                </div>
-            `;
-            chatBox.appendChild(messageDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        function adjustHeight(element) {
-            element.style.height = "auto";
-            element.style.height = element.scrollHeight + "px";
+        function showResult(htmlContent) {
+            const resultBox = document.getElementById('result-box');
+            resultBox.innerHTML = htmlContent;
+            resultBox.scrollTop = resultBox.scrollHeight;
         }
     </script>
 </head>
 
 <body class="bg-gradient-to-tl from-black via-gray-900 to-blue-900 min-h-screen p-8">
-    <h1 class="text-xl font-extrabold text-white mb-2 justify-center text-center">Create Prompt for {{$nama}}</h1>
+    <h1 class="text-xl font-extrabold text-white mb-2 text-center">
+        Create Prompt for {{ $nama }}
+    </h1>
+    <input type="hidden" id="project-id" value="{{ $id }}">
+
     <div class="max-w-4xl mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
-        <div id="chat-box" class="h-[700px] overflow-y-auto mb-4"></div>
-        <div class="flex gap-2">
-            <textarea
-                id="chat-input"
-                class="flex-1 p-2 rounded-lg bg-gray-700 text-white focus:outline-none resize-none"
-                placeholder="Ketik deskripsi proyek..."
-                oninput="adjustHeight(this)"
-                rows="1"></textarea>
-            <button
-                onclick="sendMessage()"
-                class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
-                <i class="fa-solid fa-paper-plane"></i>
-            </button>
-            <a href="{{ url('/detail-cpm', $id) }}" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition"><i class="fa-solid fa-pen"></i></a>
-            <input type="hidden" id="project-id" value="{{ $id }}">
+        <div class="mb-4">
+            <label for="excel-file" class="block text-white mb-2">Upload File Excel:</label>
+            <input
+                type="file"
+                id="excel-file"
+                accept=".xls,.xlsx"
+                class="text-white" />
         </div>
+
+        <div class="flex gap-2 mb-4">
+            <button
+                onclick="uploadAndParseFile()"
+                class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
+                <i class="fa-solid fa-upload"></i> Upload &amp; Parse
+            </button>
+            <button
+                onclick=""
+                class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition">
+                <i class="fa-solid fa-upload"></i> Create Ai
+            </button>
+
+            <a
+                href="{{ url('/detail-cpm', $id) }}"
+                class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition">
+                <i class="fa-solid fa-pen"></i>
+            </a>
+        </div>
+
+        <div
+            id="result-box"
+            class="h-[700px] overflow-y-auto bg-gray-700 p-4 rounded text-white"></div>
     </div>
+
+    <script>
+        
+    </script>
 </body>
 
 </html>

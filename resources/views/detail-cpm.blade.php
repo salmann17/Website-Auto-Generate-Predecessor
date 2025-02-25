@@ -244,12 +244,12 @@
             while (idx >= 0) {
                 letters = alphabet[idx % 26] + letters;
                 idx = Math.floor(idx / 26) - 1;
+                if (idx < 0) break;
             }
             return letters;
         }
     }
 
-    // Fungsi untuk menghitung jadwal dengan topological sort
     function computeSchedule(activities) {
         const activityMap = new Map(activities.map(a => [a.name, a]));
         let maxDay = 0;
@@ -419,7 +419,7 @@
             const activities = [];
             rows.forEach(row => {
                 const cells = row.getElementsByTagName("td");
-                const prerequisites = JSON.parse(row.dataset.prerequisites || '[]'); // Asumsi data disimpan di data-prerequisites
+                const prerequisites = JSON.parse(row.dataset.prerequisites || '[]'); 
                 const activity = {
                     name: cells[0].innerText.trim(),
                     duration: parseInt(cells[1]?.innerText || 0),
@@ -449,7 +449,6 @@
                 weeklyTotals.push(total.toFixed(2) + "%");
             }
 
-            // Tambahkan baris total
             data.push(["Total Bobot", "", "", "", "", "", ...weeklyTotals]);
 
             const workbook = new ExcelJS.Workbook();
@@ -534,11 +533,12 @@
                 col.width = Math.max(maxLength + 2, 10);
             });
 
+            let weeklyTotalsNumeric = weeklyTotals.map(item => parseFloat(item.replace("%", "")));
             let cumulative = [];
-            let total = 0;
-            sBobots.forEach(b => {
-                total += b;
-                cumulative.push(total);
+            let totalCum = 0;
+            weeklyTotalsNumeric.forEach(val => {
+                totalCum += val;
+                cumulative.push(totalCum);
             });
 
             let canvas = document.getElementById('sCurveChart');
@@ -549,6 +549,7 @@
                 document.body.appendChild(canvas);
             }
             const ctx = canvas.getContext('2d');
+            
 
             if (window.sCurveChartInstance) {
                 window.sCurveChartInstance.destroy();
@@ -557,9 +558,9 @@
             window.sCurveChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: sTasks,
+                    labels: weekHeaders,
                     datasets: [{
-                        label: '',
+                        label: 'Cumulative Bobot per Minggu',
                         data: cumulative,
                         borderColor: 'rgba(75, 192, 192, 1)',
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -571,15 +572,15 @@
                     responsive: true,
                     scales: {
                         x: {
-                            display: false
+                            display: true
                         },
                         y: {
-                            display: false,
+                            display: true
                         }
                     },
                     plugins: {
                         legend: {
-                            display: false
+                            display: true
                         }
                     }
                 }
@@ -612,6 +613,16 @@
                 });
             }, 1500);
         });
+    }
+
+    function indexToLetter(idx) {
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        let letters = "";
+        while (idx >= 0) {
+            letters = alphabet[idx % 26] + letters;
+            idx = Math.floor(idx / 26) - 1;
+        }
+        return letters;
     }
 
     function updateTotalPrice(nodeId, currentTotalPrice) {
