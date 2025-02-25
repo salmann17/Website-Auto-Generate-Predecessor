@@ -167,6 +167,11 @@
                 class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
                 <i class="fa-solid fa-upload"></i> Upload &amp; Parse
             </button>
+            <button
+                onclick=""
+                class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition">
+                <i class="fa-solid fa-upload"></i> Create Ai
+            </button>
 
             <a
                 href="{{ url('/detail-cpm', $id) }}"
