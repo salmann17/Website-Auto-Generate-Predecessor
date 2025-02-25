@@ -13,7 +13,7 @@ class PredecessorSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('predecessors')->insert([
+        DB::table('predecessor')->insert([
             ['node_core' => 2, 'node_cabang' => 1],
             ['node_core' => 3, 'node_cabang' => 2],
             ['node_core' => 4, 'node_cabang' => 3],
