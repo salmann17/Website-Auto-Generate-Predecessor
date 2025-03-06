@@ -16,7 +16,7 @@ def load_api_key():
     load_dotenv()
     return os.getenv("GROQ_API_KEY")
 
-def initialize_chat(model_name="deepseek-r1-distill-llama-70b", temperature=0.9):
+def initialize_chat(model_name="deepseek-r1-distill-llama-70b", temperature=0.5):
     """Menginisialisasi model Groq dengan LangChain"""
     api_key = load_api_key()
     if not api_key:
@@ -88,13 +88,19 @@ def ask_groq_for_predecessor(nodes_json):
 
     {nodes_json}
 
-    Ketentuan:
-    1. Setiap node harus memiliki "node_id" dan "predecessor".
-    2. "predecessor" berisi array yang menampung node_id predecessor.
-    3. Jika sebuah node tidak memiliki pekerjaan pendahulu, maka "predecessor" = [].
-    4. Hasil akhirnya **hanya** dalam format JSON berikut:
+    **Ketentuan:**
+    1. Setiap node **harus memiliki "node_id" dan "predecessor"**.
+    2. **"predecessor" berisi array yang menampung node_id predecessor.**
+    3. **Jika sebuah node memiliki lebih dari 1 pekerjaan pendahulu, pastikan semua predecessor yang relevan ditambahkan.**
+    4. **Jika hanya ada 1 predecessor, pastikan itu benar-benar tidak bisa memiliki lebih banyak.**
+    5. **Jika sebuah node tidak memiliki pekerjaan pendahulu, maka "predecessor" = [].**
+    6. **Gunakan urutan yang logis berdasarkan pekerjaan konstruksi, seperti:**
+       - **Pekerjaan struktur (misal: balok, kolom, pelat) harus menunggu pondasi selesai.**
+       - **Pemasangan bekisting harus sebelum pengecoran.**
+       - **Pekerjaan finishing (cat, keramik) menunggu pekerjaan struktur dan dinding selesai.**
+       - **Instalasi MEP dapat berjalan paralel, namun tetap menunggu sebagian struktur siap.**
 
-    **Format yang Saya Inginkan:**
+    **Format Output yang Saya Inginkan (Hanya JSON, Tanpa Teks Lain):**
     {{
         "predecessors": [
             {{"node_id": 56, "predecessor": []}},
@@ -149,6 +155,7 @@ def get_predecessor():
     nodes_json = get_nodes_only(id_project)
     # Minta AI untuk menentukan predecessor
     predecessors_nodes = ask_groq_for_predecessor(nodes_json)
+    print(predecessors_nodes)
     result = extract_and_parse_json(predecessors_nodes)
 
     if result is None:
