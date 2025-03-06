@@ -146,6 +146,16 @@
         function create_ai() {
             const idProject = document.getElementById("project-id").value;
 
+            // Tampilkan alert waiting (loading)
+            Swal.fire({
+                title: 'Tunggu...',
+                text: 'Sedang memproses data...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             fetch('http://127.0.0.1:5000/api/get_predecessor', {
                     method: 'POST',
                     headers: {
@@ -157,6 +167,9 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    // Tutup alert waiting
+                    Swal.close();
+
                     if (data.message && data.message.toLowerCase().includes('success')) {
                         Swal.fire({
                             icon: 'success',
@@ -174,6 +187,8 @@
                     }
                 })
                 .catch(error => {
+                    // Tutup alert waiting jika terjadi error
+                    Swal.close();
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
