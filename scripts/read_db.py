@@ -5,6 +5,11 @@ from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain.schema import HumanMessage
 import re
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 def load_api_key():
     """Memuat API key dari file .env"""
@@ -132,23 +137,22 @@ def check_predecessor_exists(cursor, node_core, node_cabang):
     count = cursor.fetchone()["COUNT(*)"]
     return count > 0  # True jika sudah ada, False jika belum ada
 
-if __name__ == "__main__":
-    id_project = input("Masukkan ID proyek: ")
 
-    # Ambil hanya daftar nodes
+@app.route('/api/get_predecessor', methods=['POST', 'OPTION'])
+def get_predecessor():
+    # Mengambil idproject dari request JSON
+    id_project = request.json.get('idproject')
+    if not id_project:
+        return jsonify({'error': 'ID proyek tidak diberikan'}), 400
+
+    # Ambil daftar nodes
     nodes_json = get_nodes_only(id_project)
-    print("\nDaftar node diambil. Meminta AI untuk menentukan predecessor berdasarkan node saja...\n")
-
     # Minta AI untuk menentukan predecessor
     predecessors_nodes = ask_groq_for_predecessor(nodes_json)
-    print(predecessors_nodes)
-
-    # Parse hasil JSON AI
     result = extract_and_parse_json(predecessors_nodes)
 
     if result is None:
-        print("Gagal memproses data predecessor.")
-        exit()
+        return jsonify({'error': 'Gagal memproses data predecessor.'}), 500
 
     # Koneksi ke database
     db = pymysql.connect(
@@ -165,18 +169,16 @@ if __name__ == "__main__":
     for item in result["predecessors"]:
         node_core = item["node_id"]
         predecessors = item["predecessor"]
-
         for p in predecessors:
-            # Cek apakah data sudah ada
             if not check_predecessor_exists(cursor, node_core, p):
                 sql = "INSERT INTO predecessor (node_core, node_cabang) VALUES (%s, %s)"
                 cursor.execute(sql, (node_core, p))
-                print(f"Inserted: node_core={node_core}, node_cabang={p}")
-            else:
-                print(f"Skipped (Already Exists): node_core={node_core}, node_cabang={p}")
-
+    
     db.commit()
     cursor.close()
     db.close()
 
-    print("\nPredecessor berdasarkan nodes berhasil disimpan ke database.")
+    return jsonify({'message': 'success'}), 200
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)

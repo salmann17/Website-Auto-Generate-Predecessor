@@ -142,6 +142,45 @@
             resultBox.innerHTML = htmlContent;
             resultBox.scrollTop = resultBox.scrollHeight;
         }
+
+        function create_ai() {
+            const idProject = document.getElementById("project-id").value;
+
+            fetch('http://127.0.0.1:5000/api/get_predecessor', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        idproject: idProject
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message && data.message.toLowerCase().includes('success')) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: data.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.error || 'Terjadi kesalahan saat memproses data.'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: error.message
+                    });
+                });
+        }
     </script>
 </head>
 
@@ -168,7 +207,7 @@
                 <i class="fa-solid fa-upload"></i> Upload &amp; Parse
             </button>
             <button
-                onclick=""
+                onclick="create_ai()"
                 class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition">
                 <i class="fa-solid fa-upload"></i> Create Ai
             </button>
@@ -186,7 +225,7 @@
     </div>
 
     <script>
-        
+
     </script>
 </body>
 
