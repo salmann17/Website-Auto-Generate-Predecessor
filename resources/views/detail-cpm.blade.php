@@ -250,7 +250,7 @@
             <div class="flex justify-end" style="gap: 10px">
                 <!-- <button onclick="saveRows()" id="save-button" class="save-row bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">Save</button> -->
                 <button onclick="exportExcel()" class="bg-green-900 hover:bg-green-700 text-white px-4 py-2 rounded-md justify-end">Export to Excel</button>
-                <button onclick="processTasks()" class="bg-blue-900 hover:bg-blue-700 text-white px-4 py-2 rounded-md justify-end">View CPM</button>
+                <!-- <button onclick="processTasks()" class="bg-blue-900 hover:bg-blue-700 text-white px-4 py-2 rounded-md justify-end">View CPM</button> -->
                 <!-- <button onclick="editRows()" id="edit-button" class="edit-row bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded-md">Edit</button> -->
             </div>
 
