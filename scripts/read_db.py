@@ -95,7 +95,7 @@ def ask_groq_for_predecessor(nodes_json):
     3. **Jika sebuah node memiliki lebih dari 1 pekerjaan pendahulu, pastikan semua predecessor yang relevan ditambahkan.**
     4. **Jika hanya ada 1 predecessor, pastikan itu benar-benar tidak bisa memiliki lebih banyak.**
     5. **Jika sebuah node tidak memiliki pekerjaan pendahulu, maka "predecessor" = [].**
-    6. **agar penentuan "predecessor" lebih akurat, saya sudah menyiapkan data di kolom deskripsi, jadi anda bisa membacanya terlebih dahulu agar "predecessor" yang anda tentukan lebih akurat.**
+    6. **agar penentuan "predecessor" lebih akurat, saya sudah menyiapkan data di kolom deskripsi, jadi anda bisa membacanya terlebih dahulu agar hasil yang anda tentukan lebih akurat.**
     7. **Gunakan urutan yang logis. Anda harus membaca kolom deskripsi tiap node_activitynya untuk menentukan urutan, seperti:**
        - **Pekerjaan struktur (misal: balok, kolom, pelat) harus menunggu pondasi selesai.**
        - **Pemasangan bekisting harus sebelum pengecoran.**

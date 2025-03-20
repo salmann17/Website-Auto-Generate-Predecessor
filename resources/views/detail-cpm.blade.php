@@ -136,6 +136,109 @@
                 tdContainer.appendChild(defaultContainer);
             }
         }
+
+        function processTasks() {
+            const tasks = {};
+            const rows = document.querySelectorAll('tbody tr');
+            const idToActivity = {};
+            const figsize = parseInt(document.getElementById('figsize-input').value) || 10;
+
+            rows.forEach(row => {
+                const id = row.dataset.id;
+                const activity = row.cells[0].textContent.trim();
+                if (id) {
+                    idToActivity[id] = activity;
+                }
+            });
+
+            rows.forEach(row => {
+                const activity = row.cells[0].textContent.trim();
+                const durasi = parseInt(row.cells[1].textContent.trim(), 10);
+
+                const syarat = Array.from(row.cells[2].querySelectorAll('select'))
+                    .map(select => {
+                        const selectedOption = select.options[select.selectedIndex];
+                        return idToActivity[selectedOption.value] || "";
+                    })
+                    .filter(value => value !== "");
+
+                tasks[activity] = {
+                    nama: activity,
+                    durasi: durasi,
+                    syarat: syarat
+                };
+            });
+
+            Swal.fire({
+                title: 'Memproses Gambar CPM...',
+                text: 'Harap tunggu',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            console.log("📤 Data dikirim ke Flask:", JSON.stringify(tasks, null, 2));
+
+            $.ajax({
+                url: 'http://localhost:5000/run-cpm',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    tasks: tasks,
+                    figsize: figsize
+                }),
+                success: function(response) {
+                    console.log('✅ Data processed successfully', response);
+                    Swal.fire({
+                        title: "CPM berhasil dibuat!",
+                        text: "Gambar sedang diproses, akan otomatis diunduh.",
+                        icon: "success",
+                        confirmButtonText: "OK",
+                        timer: 3000
+                    });
+
+                    // Trigger download after image is processed
+                    const imageUrl = response.image; // Get the image URL from the response
+                    const link = document.createElement('a');
+                    link.href = imageUrl;
+                    link.download = 'cpm_graph.png'; // Specify the default filename
+                    link.click(); // Automatically trigger the download
+
+                    const container = document.getElementById('cy');
+                    container.innerHTML = `
+                <div class="panzoom-container" style="overflow: hidden; width: 100%; height: 100%;">
+                    <img src="${imageUrl}" alt="CPM Graph" 
+                        style="max-width: 100%; height: auto; display: block; margin: 0 auto;">
+                </div>
+            `;
+
+                    const img = container.querySelector('img');
+                    img.src = imageUrl;
+
+                    const elem = container.querySelector('img');
+                    const panzoom = Panzoom(elem, {
+                        maxScale: 5,
+                        minScale: 0.1,
+                        contain: 'outside',
+                        canvas: true
+                    });
+
+                    container.addEventListener('wheel', panzoom.zoomWithWheel);
+                    elem.addEventListener('mousedown', panzoom.startDrag);
+                    elem.addEventListener('dblclick', panzoom.reset);
+                },
+                error: function(xhr, status, error) {
+                    console.log('❌ Error processing data', xhr.responseText);
+                    Swal.fire({
+                        title: "Gagal memproses CPM!",
+                        text: "Terjadi kesalahan dalam pemrosesan data.",
+                        icon: "error",
+                        confirmButtonText: "Coba Lagi"
+                    });
+                }
+            });
+        }
     </script>
 </head>
 
@@ -147,6 +250,7 @@
             <div class="flex justify-end" style="gap: 10px">
                 <!-- <button onclick="saveRows()" id="save-button" class="save-row bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-md">Save</button> -->
                 <button onclick="exportExcel()" class="bg-green-900 hover:bg-green-700 text-white px-4 py-2 rounded-md justify-end">Export to Excel</button>
+                <button onclick="processTasks()" class="bg-blue-900 hover:bg-blue-700 text-white px-4 py-2 rounded-md justify-end">View CPM</button>
                 <!-- <button onclick="editRows()" id="edit-button" class="edit-row bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded-md">Edit</button> -->
             </div>
 
