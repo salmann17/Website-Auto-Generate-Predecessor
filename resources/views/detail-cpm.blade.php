@@ -304,7 +304,8 @@
                             {{-- Node memiliki satu atau lebih predecessor --}}
                             @foreach ($node->predecessors as $pred)
                             <div class="dropdown-container" data-node-core="{{ $node->idnode }}" data-node-cabang="{{ $pred->nodeCabang->idnode }}">
-                                <select name="syarat[]" class="bg-gray-600 text-white rounded-md p-1 w-64 h-7">
+                                <select name="syarat[]" class="bg-gray-600 text-white rounded-md p-1 w-44 h-7">
+                                    <option value="">-</option>
                                     {{-- Tampilkan predecessor yang ada sebagai option pertama --}}
                                     <option value="{{ $pred->nodeCabang->idnode ?? '' }}">
                                         {{ $pred->nodeCabang->activity ?? '-' }}

@@ -16,7 +16,7 @@ def load_api_key():
     load_dotenv()
     return os.getenv("GROQ_API_KEY")
 
-def initialize_chat(model_name="deepseek-r1-distill-llama-70b", temperature=0.5):
+def initialize_chat(model_name="deepseek-r1-distill-llama-70b", temperature=0.3):
     """Menginisialisasi model Groq dengan LangChain"""
     api_key = load_api_key()
     if not api_key:
@@ -96,7 +96,7 @@ def ask_groq_for_predecessor(nodes_json):
     4. **Jika hanya ada 1 predecessor, pastikan itu benar-benar tidak bisa memiliki lebih banyak.**
     5. **Jika sebuah node tidak memiliki pekerjaan pendahulu, maka "predecessor" = [].**
     6. **agar penentuan "predecessor" lebih akurat, saya sudah menyiapkan data di kolom deskripsi, jadi anda bisa membacanya terlebih dahulu agar hasil yang anda tentukan lebih akurat.**
-    7. **Gunakan urutan yang logis. Anda harus membaca kolom deskripsi tiap node_activitynya untuk menentukan urutan, seperti:**
+    7. **Anda harus membaca kolom deskripsi tiap node_activitynya untuk menentukan "predecessor" nya, anda boleh menjadikan seluruh node menjadi sebuah "predecessor" sebuah activity asalkan login, oleh karena itu anda harus membaca deskripsi tiap node_activity agar anda bisa menentukannya, seperti:**
        - **Pekerjaan struktur (misal: balok, kolom, pelat) harus menunggu pondasi selesai.**
        - **Pemasangan bekisting harus sebelum pengecoran.**
        - **Pekerjaan finishing (cat, keramik) menunggu pekerjaan struktur dan dinding selesai.**

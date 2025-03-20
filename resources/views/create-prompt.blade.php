@@ -223,7 +223,7 @@
             </button>
             <button
                 onclick="create_ai()"
-                class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition">
+                class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition">
                 <i class="fa-solid fa-upload"></i> Create Ai
             </button>
 
