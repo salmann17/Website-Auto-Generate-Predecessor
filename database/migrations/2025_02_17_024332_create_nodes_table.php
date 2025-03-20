@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('activity', 255)->nullable();
             $table->integer('durasi')->nullable();
             $table->integer('prioritas')->nullable();
+            $table->longText('deskripsi')->nullable(); 
             $table->integer('total_price')->nullable();
             $table->string('bobot_rencana', 45)->nullable();
             $table->string('bobot_realisasi', 45)->nullable();

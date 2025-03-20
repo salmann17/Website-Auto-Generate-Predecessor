@@ -20,6 +20,7 @@ class Node extends Model
         'durasi',
         'prioritas',
         'total_price',
+        'deskripsi',
         'bobot_rencana',
         'bobot_realisasi',
         'id_sub_activity'

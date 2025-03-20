@@ -156,7 +156,7 @@
                 }
             });
 
-            fetch('http://127.0.0.1:5000/api/get_predecessor', {
+            fetch('http://127.0.0.1:5025/api/get_predecessor', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

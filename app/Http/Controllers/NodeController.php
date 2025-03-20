@@ -17,6 +17,7 @@ class NodeController extends Controller
     {
         return view('create-project');
     }
+
     public function show($id)
     {
         $projects = Project::findOrFail($id);
@@ -34,44 +35,62 @@ class NodeController extends Controller
             ->get();
 
 
-        return view('detail-cpm', compact('projects', 'activities', 'allNodes'));
+        return view('detail-cpm', compact('projects', 'activities', 'allNodes', 'id'));
     }
 
     public function updateTotalPrice(Request $request)
     {
         $request->validate([
             'nodeId'      => 'required|integer',
-            'total_price' => 'required|numeric'
+            'total_price' => 'required|numeric',
+            'project_id'  => 'required|integer',
         ]);
 
-        $node = Node::find($request->nodeId);
+        // Fetch the node based on both nodeId and project_id to avoid mixing projects
+        $node = Node::where('idnode', $request->nodeId)
+            ->whereHas('subActivity.activity', function ($query) use ($request) {
+                $query->where('idproject', $request->project_id);  // Filter by project
+            })
+            ->first();
+
         if (!$node) {
             return response()->json([
                 'success' => false,
-                'message' => 'Node tidak ditemukan.'
+                'message' => 'Node tidak ditemukan atau node bukan bagian dari project ini.'
             ], 404);
         }
 
+        // Update the node's total_price and recalculate bobot_rencana
         $node->total_price = $request->total_price;
         $node->save();
 
-        $sumTotalPrice = Node::sum('total_price');
+        // Calculate sum of total_price for nodes within the same project
+        $sumTotalPrice = Node::whereHas('subActivity.activity', function ($query) use ($request) {
+            $query->where('idproject', $request->project_id);
+        })->sum('total_price');
 
         if ($sumTotalPrice > 0) {
-            $nodes = Node::all();
+            $nodes = Node::whereHas('subActivity.activity', function ($query) use ($request) {
+                $query->where('idproject', $request->project_id);
+            })->get();
+
             foreach ($nodes as $nodeUpdate) {
                 $nodeUpdate->bobot_rencana = round(($nodeUpdate->total_price / $sumTotalPrice) * 100, 2);
                 $nodeUpdate->save();
             }
         } else {
-            Node::query()->update(['bobot' => 0]);
+            Node::whereHas('subActivity.activity', function ($query) use ($request) {
+                $query->where('idproject', $request->project_id);
+            })->update(['bobot_rencana' => 0]);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Total Price dan Bobot berhasil diperbarui.'
+            'message' => 'Total Price dan Bobot berhasil diperbarui untuk project ini.'
         ]);
     }
+
+
 
     public function update(Request $request)
     {
@@ -165,7 +184,8 @@ class NodeController extends Controller
                                 Node::create([
                                     'activity'        => $nodeData['name'],
                                     'id_sub_activity' => $subActivity->idsub_activity,
-                                    'durasi'          => $nodeData['duration'] ?? 0
+                                    'durasi'          => $nodeData['duration'] ?? 0,
+                                    'deskripsi'      => $nodeData['description'] ?? '',
                                 ]);
                             }
                         }

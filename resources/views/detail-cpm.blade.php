@@ -163,12 +163,19 @@
                 </thead>
                 <input type="hidden" name="project_name" id="project_name" value="{{ $projects->nama }}">
                 <input type="hidden" name="project_location" id="project_location" value="{{ $projects->alamat }}">
+                <input type="hidden" name="project_id" id="project_id" value="{{ $id }}">
 
                 <tbody class="divide-y divide-gray-600">
+                    @php
+                    $counter = 1; // Inisialisasi penghitung
+                    @endphp
                     @foreach ($activities as $activity)
-                    <tr class="bg-gray-800 text-white font-bold transition duration-150 ">
-                        <td class="p-4">{{ $activity->idactivity }}. {{ $activity->activity }}</td>
+                    <tr class="bg-gray-800 text-white font-bold transition duration-150">
+                        <td class="p-4">{{ $counter }}. {{ $activity->activity }}</td>
                     </tr>
+                    @php
+                    $counter++; // Menambah penghitung setiap kali ada aktivitas
+                    @endphp
                     @foreach ($activity->subActivities as $subActivity)
                     <tr class="bg-gray-800 text-gray-300  transition duration-150">
                         <td class="p-4 pl-8">• {{ $subActivity->activity }}</td>
@@ -219,7 +226,7 @@
                                 style="cursor: pointer;">
                             </i>
                         </td>
-                        <td> {{$node->bobot_rencana}}% </td>
+                        <td> {{$node->bobot_rencana}}%</td>
                     </tr>
                     @endforeach
                     @endforeach
@@ -419,7 +426,7 @@
             const activities = [];
             rows.forEach(row => {
                 const cells = row.getElementsByTagName("td");
-                const prerequisites = JSON.parse(row.dataset.prerequisites || '[]'); 
+                const prerequisites = JSON.parse(row.dataset.prerequisites || '[]');
                 const activity = {
                     name: cells[0].innerText.trim(),
                     duration: parseInt(cells[1]?.innerText || 0),
@@ -549,7 +556,7 @@
                 document.body.appendChild(canvas);
             }
             const ctx = canvas.getContext('2d');
-            
+
 
             if (window.sCurveChartInstance) {
                 window.sCurveChartInstance.destroy();
@@ -626,6 +633,8 @@
     }
 
     function updateTotalPrice(nodeId, currentTotalPrice) {
+        const projectId = document.getElementById('project_id').value; // Retrieve project_id from hidden input
+
         Swal.fire({
             title: 'Update Total Price',
             input: 'number',
@@ -645,6 +654,7 @@
                         data: {
                             nodeId: nodeId,
                             total_price: newPrice,
+                            project_id: projectId, // Send project_id along with nodeId and total_price
                             _token: $('meta[name="csrf-token"]').attr('content')
                         }
                     })

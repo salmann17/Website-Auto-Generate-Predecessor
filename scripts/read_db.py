@@ -9,7 +9,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app)
 
 def load_api_key():
     """Memuat API key dari file .env"""
@@ -49,7 +49,8 @@ def get_nodes_only(idproject):
     SELECT 
         n.idnode AS node_id, 
         n.activity AS node_activity,
-        n.durasi
+        n.durasi,
+        n.deskripsi
     FROM nodes n
     JOIN sub_activity sa ON n.id_sub_activity = sa.idsub_activity
     JOIN activity a ON sa.idactivity = a.idactivity
@@ -94,7 +95,8 @@ def ask_groq_for_predecessor(nodes_json):
     3. **Jika sebuah node memiliki lebih dari 1 pekerjaan pendahulu, pastikan semua predecessor yang relevan ditambahkan.**
     4. **Jika hanya ada 1 predecessor, pastikan itu benar-benar tidak bisa memiliki lebih banyak.**
     5. **Jika sebuah node tidak memiliki pekerjaan pendahulu, maka "predecessor" = [].**
-    6. **Gunakan urutan yang logis berdasarkan pekerjaan konstruksi, seperti:**
+    6. **agar penentuan "predecessor" lebih akurat, saya sudah menyiapkan data di kolom deskripsi, jadi anda bisa membacanya terlebih dahulu agar "predecessor" yang anda tentukan lebih akurat.**
+    7. **Gunakan urutan yang logis. Anda harus membaca kolom deskripsi tiap node_activitynya untuk menentukan urutan, seperti:**
        - **Pekerjaan struktur (misal: balok, kolom, pelat) harus menunggu pondasi selesai.**
        - **Pemasangan bekisting harus sebelum pengecoran.**
        - **Pekerjaan finishing (cat, keramik) menunggu pekerjaan struktur dan dinding selesai.**
@@ -188,4 +190,4 @@ def get_predecessor():
     return jsonify({'message': 'success'}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5025)

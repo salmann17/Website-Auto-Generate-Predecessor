@@ -10,6 +10,7 @@ CORS(app)
 def parse_hierarchy(row):
     activity = str(row[0]).strip() if row[0] else ''
     duration = row[1] if len(row) > 1 else 0
+    description = row[2] if len(row) > 2 else ''
     
     if re.match(r'^\d+\.\s', activity):
         return {
@@ -25,7 +26,8 @@ def parse_hierarchy(row):
         return {
             'type': 'node',
             'name': re.sub(r'^-\s', '', activity),
-            'duration': duration
+            'duration': duration,
+            'description': description
         }
     return None
 
