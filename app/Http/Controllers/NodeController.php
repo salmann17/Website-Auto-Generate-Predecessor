@@ -227,4 +227,35 @@ class NodeController extends Controller
             ], 500);
         }
     }
+    public function updateBobotRealisasi(Request $request)
+    {
+        $request->validate([
+            'nodeId' => 'required|integer',
+            'bobot_realisasi' => 'required|numeric',
+            'project_id' => 'required|integer',
+        ]);
+
+        // Ambil node yang ingin diupdate
+        $node = Node::where('idnode', $request->nodeId)
+            ->whereHas('subActivity.activity', function ($query) use ($request) {
+                $query->where('idproject', $request->project_id);
+            })
+            ->first();
+
+        if (!$node) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Node tidak ditemukan atau node bukan bagian dari project ini.'
+            ], 404);
+        }
+
+        // Update bobot_realisasi
+        $node->bobot_realisasi = $request->bobot_realisasi;
+        $node->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bobot Realisasi berhasil diperbarui.'
+        ]);
+    }
 }
