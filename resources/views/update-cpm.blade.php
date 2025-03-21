@@ -19,7 +19,7 @@
 
     <div class="flex min-h-screen px-4 py-8">
         <div class="w-full p-4 bg-gray-800 rounded-lg shadow-lg">
-            <h1 class="text-4xl font-extrabold text-white mb-4">Detail CPM</h1>
+            <h1 class="text-4xl font-extrabold text-white mb-4">Update CPM</h1>
             <div class="flex justify-end" style="gap: 10px">
                 <!-- <button onclick="exportExcel()" class="bg-green-900 hover:bg-green-700 text-white px-4 py-2 rounded-md justify-end">Export to Excel</button> -->
             </div>
@@ -31,7 +31,7 @@
                         <th class="p-2 border-b">Durasi </th>
                         <th class="p-2 border-b">Syarat</th>
                         <th class="p-2 border-b">Bobot</th>
-                        <th class="p-2 border-b">Update bobot</th>
+                        <th class="p-2 border-b">Update Sisa bobot</th>
                     </tr>
                 </thead>
                 <input type="hidden" name="project_id" id="project_id" value="{{ $id }}">
