@@ -25,7 +25,7 @@
                         <a href="{{ route('nodes.show', $project->idproject) }}" class="mt-4 inline-block px-6 py-2 bg-transparent border-2 border-gray-500 text-white rounded-full transition duration-300 hover:bg-white hover:text-black hover:border-black">
                             View Details
                         </a>
-                        <a href="" class="mt-4 inline-block px-6 py-2 bg-transparent border-2 border-gray-500 text-white rounded-full transition duration-300 hover:bg-white hover:text-black hover:border-black">
+                        <a href="{{ route('nodes.showUpdate', $project->idproject) }}" class="mt-4 inline-block px-6 py-2 bg-transparent border-2 border-gray-500 text-white rounded-full transition duration-300 hover:bg-white hover:text-black hover:border-black">
                             Update Details
                         </a>
                     </div>

@@ -10,6 +10,7 @@ Route::get('/', function () {
 
 Route::get('/view-project', [ProjectController::class, 'index'])->name('view-project');
 Route::get('/detail-cpm/{id}', [NodeController::class, 'show'])->name('nodes.show');
+Route::get('/update-cpm/{id}', [NodeController::class, 'showUpdate'])->name('nodes.showUpdate');
 
 Route::post('/run-python', [NodeController::class, 'runPython']);
 Route::post('/update-nodes', [NodeController::class, 'updateNodes']);

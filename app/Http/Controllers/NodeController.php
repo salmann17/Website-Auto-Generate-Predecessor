@@ -38,6 +38,26 @@ class NodeController extends Controller
         return view('detail-cpm', compact('projects', 'activities', 'allNodes', 'id'));
     }
 
+    public function showUpdate($id)
+    {
+        $projects = Project::findOrFail($id);
+
+        $activities = Activity::where('idproject', $projects->idproject)
+            ->with([
+                'subActivities.nodes.predecessors.nodeCabang'
+            ])
+            ->get();
+
+        $allNodes = Node::join('sub_activity', 'nodes.id_sub_activity', '=', 'sub_activity.idsub_activity')
+            ->join('activity', 'sub_activity.idactivity', '=', 'activity.idactivity')
+            ->where('activity.idproject', $projects->idproject)
+            ->select('nodes.*', 'sub_activity.activity as sub_activity_activity')
+            ->get();
+
+
+        return view('update-cpm', compact('projects', 'activities', 'allNodes', 'id'));
+    }
+
     public function updateTotalPrice(Request $request)
     {
         $request->validate([
