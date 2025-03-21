@@ -173,19 +173,19 @@ class NodeController extends Controller
                         // Buat record SubActivity tanpa durasi
                         $subActivity = SubActivity::create([
                             'activity'   => $subData['name'],
-                            // Gunakan primaryKey yang benar
                             'idactivity' => $activity->idactivity
                         ]);
 
                         // Cek apakah ada nodes
                         if (isset($subData['nodes'])) {
                             foreach ($subData['nodes'] as $nodeData) {
-                                // Hanya di Node kita masukkan durasi
+                                // Hanya di Node kita masukkan durasi dan total_price
                                 Node::create([
                                     'activity'        => $nodeData['name'],
                                     'id_sub_activity' => $subActivity->idsub_activity,
                                     'durasi'          => $nodeData['duration'] ?? 0,
-                                    'deskripsi'      => $nodeData['description'] ?? '',
+                                    'deskripsi'       => $nodeData['description'] ?? '',
+                                    'total_price'     => $nodeData['total_price'] ?? 0  // Pastikan total_price dimasukkan
                                 ]);
                             }
                         }

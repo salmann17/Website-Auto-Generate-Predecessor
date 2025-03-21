@@ -11,7 +11,8 @@ def parse_hierarchy(row):
     activity = str(row[0]).strip() if row[0] else ''
     duration = row[1] if len(row) > 1 else 0
     description = row[2] if len(row) > 2 else ''
-    
+    total_price = row[3] if len(row) > 3 else 0  
+
     if re.match(r'^\d+\.\s', activity):
         return {
             'type': 'activity',
@@ -27,9 +28,11 @@ def parse_hierarchy(row):
             'type': 'node',
             'name': re.sub(r'^-\s', '', activity),
             'duration': duration,
-            'description': description
+            'description': description,
+            'total_price': total_price  
         }
     return None
+
 
 @app.route('/api/parse-excel', methods=['POST'])
 def parse_excel():
