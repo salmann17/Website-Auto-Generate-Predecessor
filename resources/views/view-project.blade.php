@@ -17,19 +17,28 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 w-full">
             @foreach ($projects as $project)
-                <div class="bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 text-white rounded-lg shadow-xl overflow-hidden transform transition-all hover:scale-105 hover:shadow-2xl">
-                    <div class="p-6">
-                        <h2 class="text-xl font-semibold mb-2 text-center">{{ $project->nama }}</h2>
-                        <p class="text-gray-300 text-center">{{ $project->deskripsi }}</p>
-                        <p class="text-gray-500 text-center">{{ $project->alamat }}</p>
-                        <a href="{{ route('nodes.show', $project->idproject) }}" class="mt-4 inline-block px-6 py-2 bg-transparent border-2 border-gray-500 text-white rounded-full transition duration-300 hover:bg-white hover:text-black hover:border-black">
-                            View Details
-                        </a>
-                        <a href="{{ route('nodes.showUpdate', $project->idproject) }}" class="mt-4 inline-block px-6 py-2 bg-transparent border-2 border-gray-500 text-white rounded-full transition duration-300 hover:bg-white hover:text-black hover:border-black">
-                            Update Details
-                        </a>
-                    </div>
+            <div class="bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 text-white rounded-lg shadow-xl overflow-hidden transform transition-all hover:scale-105 hover:shadow-2xl">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold mb-2 text-center">{{ $project->nama }}</h2>
+                    <p class="text-gray-300 text-center">{{ $project->deskripsi }}</p>
+                    <p class="text-gray-500 text-center">{{ $project->alamat }}</p>
+                    @if ($project->update_status)
+                    <!-- Jika update_status == true, disable tombol -->
+                    <button class="mt-4 inline-block px-6 py-2 bg-white border-gray-100 text-black rounded-full transition duration-300 hover:bg-white hover:text-black hover:border-black" disabled>
+                        View Details
+                    </button>
+                    @else
+                    <!-- Jika update_status == false, enable tombol -->
+                    <a href="{{ route('nodes.show', $project->idproject) }}"
+                        class="mt-4 inline-block px-6 py-2 bg-transparent border-2 border-gray-500 text-white rounded-full transition duration-300 hover:bg-white hover:text-black hover:border-black">
+                        View Details
+                    </a>
+                    @endif
+                    <a href="{{ route('nodes.showUpdate', $project->idproject) }}" class="mt-4 inline-block px-6 py-2 bg-transparent border-2 border-gray-500 text-white rounded-full transition duration-300 hover:bg-white hover:text-black hover:border-black">
+                        Update Details
+                    </a>
                 </div>
+            </div>
             @endforeach
         </div>
 
