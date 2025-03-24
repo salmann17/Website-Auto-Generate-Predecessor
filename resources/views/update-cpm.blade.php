@@ -63,9 +63,9 @@
                             @endforeach
                         </td>
 
-                        <td > {{$node->bobot_rencana}}%</td>
+                        <td> {{$node->bobot_rencana}}%</td>
 
-                        <td id="node-{{ $node->idnode }}-bobot-rencana" class="text-yellow-400"> 
+                        <td id="node-{{ $node->idnode }}-bobot-rencana" class="text-yellow-400">
                             @if (($node->bobot_rencana - $node->bobot_realisasi) > 0)
                             <i class="fa-solid fa-pen-to-square"
                                 onclick="updateBobotRealisasi('{{ $node->idnode }}', '{{ $node->bobot_realisasi }}')"
@@ -77,7 +77,7 @@
                         </td>
                         <td>
                             <button class="bg-blue-600 text-white px-2 py-1 rounded-md"
-                                    onclick="getRekomendasi('{{ $node->idnode }}')">
+                                onclick="getRekomendasi('{{ $node->idnode }}')">
                                 Lihat Rekomendasi
                             </button>
                         </td>
@@ -92,45 +92,49 @@
 </body>
 <script>
     function updateBobotRealisasi(nodeId, currentBobotRealisasi) {
-        const projectId = document.getElementById('project_id').value; // Retrieve project_id from hidden input
-        const bobotRencana = document.querySelector(`#node-${nodeId}-bobot-rencana`).textContent;
-
-        const remainingBobot = bobotRencana - currentBobotRealisasi; // Calculate the remaining bobot
-
-        // Prevent update if the remaining bobot is 0
-        if (remainingBobot < 0) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Update Disabled',
-                text: 'Bobot sudah mencapai 0, update tidak diperbolehkan!',
-            });
-            return;
-        }
+        const projectId = document.getElementById('project_id').value;
 
         Swal.fire({
             title: 'Update Bobot Realisasi',
             input: 'number',
-            inputValue: currentBobotRealisasi || '',
-            inputLabel: 'Masukkan Bobot Realisasi baru',
+            inputValue: '', // kosong, karena user akan memasukkan tambahan
+            inputLabel: 'Masukkan penambahan Bobot Realisasi (boleh desimal)',
+            inputAttributes: {
+                step: '0.01', // Mengizinkan input desimal
+                min: '0' // Opsi: minimal 0
+            },
             showCancelButton: true,
             confirmButtonText: 'Update',
             showLoaderOnConfirm: true,
-            preConfirm: (newBobotRealisasi) => {
-                if (!newBobotRealisasi) {
-                    Swal.showValidationMessage('Mohon masukkan bobot realisasi!');
+            preConfirm: (addedValue) => {
+                if (!addedValue) {
+                    Swal.showValidationMessage('Mohon masukkan bobot realisasi (tambahan)!');
                     return false;
                 }
+
+                const increment = parseFloat(addedValue);
+                if (isNaN(increment)) {
+                    Swal.showValidationMessage('Masukkan angka yang valid (boleh desimal)!');
+                    return false;
+                }
+
+                // Lakukan AJAX ke server
                 return $.ajax({
-                        url: "{{ route('updateBobotRealisasi') }}", // Use the named route here
+                        url: "{{ route('updateBobotRealisasi') }}", // Pastikan route Anda benar
                         method: 'POST',
                         data: {
                             nodeId: nodeId,
-                            bobot_realisasi: newBobotRealisasi,
-                            project_id: projectId, // Send project_id along with nodeId and bobot_realisasi
+                            increment: increment, // <-- Kirim nilai tambahan
+                            project_id: projectId,
                             _token: $('meta[name="csrf-token"]').attr('content')
                         }
                     })
                     .done(function(response) {
+                        if (!response.success) {
+                            // Jika ada error, kita munculkan ke user
+                            Swal.showValidationMessage(response.message || 'Gagal update!');
+                            return false;
+                        }
                         return response;
                     })
                     .fail(function(error) {
@@ -152,35 +156,37 @@
             }
         });
     }
+
+
     function getRekomendasi(nodeId) {
         const projectId = document.getElementById('project_id').value;
 
-        // Panggil route Laravel untuk mendapatkan rekomendasi
         $.ajax({
-            url: "{{ route('nodes.rekomendasi') }}",  // route('nodes.rekomendasi') akan kita definisikan di web.php
+            url: "{{ route('node.rekomendasi') }}",
             method: 'GET',
             data: {
                 node_id: nodeId,
                 project_id: projectId
             },
             success: function(response) {
-                // Tampilkan hasil rekomendasi di SweetAlert
                 if (response.success) {
+                    // Tampilkan data rekomendasi di SweetAlert
                     Swal.fire({
                         title: 'Rekomendasi Aktivitas Paralel',
-                        html: formatRekomendasi(response.data),
+                        html: formatRekomendasi(response),
                         icon: 'info',
                         confirmButtonText: 'OK'
                     });
                 } else {
+                    // Jika gagal atau tidak ada rekomendasi
                     Swal.fire({
-                        title: 'Gagal Mendapatkan Rekomendasi',
-                        text: response.message,
-                        icon: 'error'
+                        title: 'Info',
+                        text: response.message || 'Tidak ada rekomendasi',
+                        icon: 'info'
                     });
                 }
             },
-            error: function(xhr, status, error) {
+            error: function(xhr) {
                 Swal.fire({
                     title: 'Error',
                     text: 'Terjadi kesalahan saat mengambil rekomendasi.',
@@ -190,16 +196,36 @@
         });
     }
 
-    // Fungsi bantu untuk memformat data rekomendasi menjadi list HTML
-    function formatRekomendasi(data) {
-        if (!data || data.length === 0) {
-            return '<p>Tidak ada aktivitas yang bisa dijalankan paralel.</p>';
+    // Format tampilan di SweetAlert
+    function formatRekomendasi(response) {
+        let html = '';
+
+        // Jika ada data recommended
+        if (response.data && response.data.length > 0) {
+            html += '<p>Berikut aktivitas yang bisa dijalankan paralel:</p>';
+            html += '<ul class="text-left list-disc ml-6">';
+            response.data.forEach(item => {
+                html += `<li>${item.activity} (ID: ${item.idnode})</li>`;
+            });
+            html += '</ul>';
         }
-        let html = '<ul class="text-left list-disc ml-6">';
-        data.forEach(item => {
-            html += `<li>${item.activity} (ID: ${item.idnode})</li>`;
-        });
-        html += '</ul>';
+
+        // Tampilkan pesan default jika ada
+        if (response.message) {
+            html += `<p class="mt-2">${response.message}</p>`;
+        }
+
+        // Jika ada unfinished
+        if (response.unfinished && response.unfinished.length > 0) {
+            html += '<hr class="my-2"/>';
+            html += '<p>Syarat yang belum complete:</p>';
+            html += '<ul class="text-left list-disc ml-6">';
+            response.unfinished.forEach(item => {
+                html += `<li>${item.activity} (ID: ${item.idnode})</li>`;
+            });
+            html += '</ul>';
+        }
+
         return html;
     }
 </script>

@@ -227,15 +227,17 @@ class NodeController extends Controller
             ], 500);
         }
     }
+
     public function updateBobotRealisasi(Request $request)
     {
+        // Validasi input
         $request->validate([
-            'nodeId' => 'required|integer',
-            'bobot_realisasi' => 'required|numeric',
+            'nodeId'    => 'required|integer',
+            'increment' => 'required|numeric',
             'project_id' => 'required|integer',
         ]);
 
-        // Ambil node yang ingin diupdate
+        // Cari node
         $node = Node::where('idnode', $request->nodeId)
             ->whereHas('subActivity.activity', function ($query) use ($request) {
                 $query->where('idproject', $request->project_id);
@@ -245,12 +247,33 @@ class NodeController extends Controller
         if (!$node) {
             return response()->json([
                 'success' => false,
-                'message' => 'Node tidak ditemukan atau node bukan bagian dari project ini.'
+                'message' => 'Node tidak ditemukan atau bukan bagian dari project ini.'
             ], 404);
         }
 
-        // Update bobot_realisasi
-        $node->bobot_realisasi = $request->bobot_realisasi;
+        // Hitung bobot realisasi baru
+        $oldRealisasi = (float) $node->bobot_realisasi;
+        $increment    = (float) $request->increment;
+        $bobotRencana = (float) $node->bobot_rencana;
+
+        // Tambahkan bobot realisasi lama dengan increment
+        $newRealisasi = $oldRealisasi + $increment;
+
+        // DI SINILAH ANDA MENERAPKAN round():
+        // Membulatkan ke 2 desimal (silakan ganti 2 menjadi jumlah desimal yang Anda inginkan)
+        $newRealisasi = round($newRealisasi, 3);
+        $bobotRencana = round($bobotRencana, 3);
+
+        // Setelah dibulatkan, barulah lakukan pengecekan
+        if ($newRealisasi > $bobotRencana) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda mengupdate bobot terlalu besar dari bobot rencana.'
+            ]);
+        }
+
+        // Update node
+        $node->bobot_realisasi = $newRealisasi;
         $node->save();
 
         return response()->json([
@@ -258,6 +281,8 @@ class NodeController extends Controller
             'message' => 'Bobot Realisasi berhasil diperbarui.'
         ]);
     }
+
+
     public function getRekomendasi(Request $request)
     {
         $nodeId = $request->input('node_id');
@@ -270,57 +295,107 @@ class NodeController extends Controller
             ], 400);
         }
 
-        // 1. Ambil semua node dalam project, kecuali node yang sedang di-klik (opsional).
-        // 2. Tentukan node mana saja yang semua predecessor-nya complete.
+        // Ambil node A (node yang diklik)
+        $nodeA = Node::where('idnode', $nodeId)
+            ->whereHas('subActivity.activity', function ($query) use ($projectId) {
+                $query->where('idproject', $projectId);
+            })
+            ->with('predecessors.nodeCabang') // include predecessor relationship
+            ->first();
 
-        // Ambil semua node di project
-        $allNodes = Node::select('nodes.*')
+        if (!$nodeA) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Node tidak ditemukan atau bukan bagian dari project ini.'
+            ], 404);
+        }
+
+        // 1. Cek apakah node A sendiri sudah complete
+        //    (bobot_realisasi == bobot_rencana)
+        if ($nodeA->bobot_realisasi < $nodeA->bobot_rencana) {
+            // Node A belum complete => kembalikan pesan
+            // Syarat yang belum complete adalah node A itu sendiri
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda belum memiliki rekomendasi pada node ini karena node ini sendiri belum complete.',
+                'unfinished' => [[
+                    'idnode' => $nodeA->idnode,
+                    'activity' => $nodeA->activity
+                ]]
+            ]);
+        }
+
+        // Node A complete. Cari node-node lain (B) yang menjadikan A sebagai predecessor.
+        // Caranya: ambil semua node di project, lalu filter yang di "predecessor" berisi A.
+        $allNodes = Node::with('predecessors.nodeCabang')
             ->join('sub_activity', 'sub_activity.idsub_activity', '=', 'nodes.id_sub_activity')
             ->join('activity', 'activity.idactivity', '=', 'sub_activity.idactivity')
             ->where('activity.idproject', $projectId)
-            ->with('predecessors.nodeCabang')
+            ->select('nodes.*')
             ->get();
 
-        // Buat peta (map) node agar mudah diakses
+        // Map node by idnode => Node
         $nodeMap = $allNodes->keyBy('idnode');
 
-        // Fungsi untuk cek apakah predecessor complete
-        $isPredecessorComplete = function ($node) use ($nodeMap) {
-            // Node dianggap complete jika bobot_realisasi == bobot_rencana
-            return $node->bobot_realisasi == $node->bobot_rencana;
-        };
+        $recommended = [];   // Daftar node yang bisa dikerjakan paralel
+        $unfinishedAll = []; // Kumpulan predecessor yang belum complete (untuk alasan)
 
-        // Kumpulkan node yang dapat dijalankan paralel
-        // Logika sederhana: node bisa dijalankan jika SEMUA predecessor-nya complete.
-        $recommended = [];
-        foreach ($allNodes as $n) {
-            // Skip kalau node ini sendiri sudah complete
-            if ($n->bobot_realisasi == $n->bobot_rencana) {
-                continue;
-            }
-
-            // Cek semua predecessor
-            $allPredecessorsComplete = true;
-            foreach ($n->predecessors as $pred) {
-                $cabang = $nodeMap[$pred->node_cabang] ?? null;
-                if ($cabang && !$isPredecessorComplete($cabang)) {
-                    $allPredecessorsComplete = false;
+        foreach ($allNodes as $nodeB) {
+            // Cek apakah nodeB memiliki nodeA sebagai salah satu predecessor
+            $hasAAsPredecessor = false;
+            foreach ($nodeB->predecessors as $pred) {
+                if ($pred->node_cabang == $nodeId) {
+                    $hasAAsPredecessor = true;
                     break;
                 }
             }
+            if (!$hasAAsPredecessor) {
+                continue; // nodeB tidak bergantung pada nodeA, skip
+            }
 
-            // Jika semua predecessor complete, node ini dapat dijalankan paralel
+            // Sekarang cek: Apakah SEMUA predecessor nodeB complete?
+            $allPredecessorsComplete = true;
+            $tempUnfinished = [];
+            foreach ($nodeB->predecessors as $pred) {
+                $pNode = $nodeMap[$pred->node_cabang] ?? null;
+                if ($pNode && $pNode->bobot_realisasi < $pNode->bobot_rencana) {
+                    $allPredecessorsComplete = false;
+                    $tempUnfinished[] = [
+                        'idnode' => $pNode->idnode,
+                        'activity' => $pNode->activity
+                    ];
+                }
+            }
+
             if ($allPredecessorsComplete) {
+                // nodeB bisa direkomendasikan untuk dijalankan paralel
                 $recommended[] = [
-                    'idnode' => $n->idnode,
-                    'activity' => $n->activity
+                    'idnode' => $nodeB->idnode,
+                    'activity' => $nodeB->activity
                 ];
+            } else {
+                // nodeB tidak direkomendasikan karena masih ada syarat yang belum complete
+                // Simpan info syarat yang belum complete
+                foreach ($tempUnfinished as $uf) {
+                    $unfinishedAll[] = $uf;
+                }
             }
         }
 
+        // Jika tidak ada node yang direkomendasikan, kembalikan pesan
+        if (count($recommended) == 0) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Anda belum memiliki rekomendasi pada node ini karena beberapa syarat belum terpenuhi.',
+                'unfinished' => $unfinishedAll
+            ]);
+        }
+
+        // Jika ada node yang direkomendasikan
         return response()->json([
             'success' => true,
-            'data' => $recommended
+            'data' => $recommended,
+            'unfinished' => $unfinishedAll, // Mungkin ada predecessor lain juga
         ]);
     }
 }
