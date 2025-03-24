@@ -145,6 +145,11 @@
         <div class="w-full p-4 bg-gray-800 rounded-lg shadow-lg">
             <h1 class="text-4xl font-extrabold text-white mb-4">Detail CPM</h1>
             <div class="flex justify-end" style="gap: 10px">
+            <a href="{{ route('view-project') }}">
+                    <button class="px-8 py-3 bg-blue-600 text-white rounded-md shadow-lg transition duration-300 hover:bg-blue-700 font-inter">
+                        Back
+                    </button>
+                </a>
                 <button class="bg-green-900 hover:bg-green-700 text-white px-4 py-2 rounded"
                     onclick="saveAll('{{ $projects->idproject }}')">
                     Save All
