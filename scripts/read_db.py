@@ -21,7 +21,7 @@ def load_api_key():
     load_dotenv()
     return os.getenv("GROQ_API_KEY")
 
-def initialize_chat(model_name="deepseek-r1-distill-llama-70b", temperature=0.3):
+def initialize_chat(model_name="deepseek-r1-distill-llama-70b", temperature=0.5):
     """Menginisialisasi model Groq dengan LangChain"""
     api_key = load_api_key()
     if not api_key:

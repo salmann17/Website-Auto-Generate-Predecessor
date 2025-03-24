@@ -9,6 +9,7 @@ use App\Models\Activity;
 use App\Models\SubActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use GuzzleHttp\Client;
 
 
 class NodeController extends Controller
@@ -180,10 +181,13 @@ class NodeController extends Controller
         DB::beginTransaction();
 
         try {
-            $projectId = $request->project_id;
+            $projectId = $request->input('project_id');
 
-            // 1. Simpan data Activity, SubActivity, dan Node (termasuk total_price)
+            // Inisialisasi Guzzle Client
+            $client = new Client();
+
             foreach ($request->activities as $activityData) {
+                // Simpan Activity
                 $activity = Activity::create([
                     'activity'  => $activityData['name'],
                     'idproject' => $projectId
@@ -191,6 +195,7 @@ class NodeController extends Controller
 
                 if (isset($activityData['sub_activities'])) {
                     foreach ($activityData['sub_activities'] as $subData) {
+                        // Simpan SubActivity
                         $subActivity = SubActivity::create([
                             'activity'   => $subData['name'],
                             'idactivity' => $activity->idactivity
@@ -198,11 +203,41 @@ class NodeController extends Controller
 
                         if (isset($subData['nodes'])) {
                             foreach ($subData['nodes'] as $nodeData) {
+                                // Jika description kosong, panggil API /api/get_semantic
+                                $description = $nodeData['description'] ?? '';
+                                if (trim($description) === '') {
+                                    // Panggil Flask API untuk dapatkan deskripsi
+                                    try {
+                                        $response = $client->post('http://127.0.0.1:5025/api/get_semantic', [
+                                            'json' => [
+                                                'pekerjaan' => $nodeData['name'] ?? ''
+                                            ]
+                                        ]);
+
+                                        $resBody = json_decode($response->getBody(), true);
+                                        // dd($resBody); // <-- untuk debug, Anda bisa uncomment ini
+
+                                        if (
+                                            isset($resBody['message']) &&
+                                            is_array($resBody['message']) &&
+                                            array_key_exists('deskripsi', $resBody['message'])
+                                        ) {
+                                            $description = $resBody['message']['deskripsi'];
+                                        } else {
+                                            $description = 'NO SEMANTIC FOUND';
+                                        }
+                                    } catch (\Exception $e) {
+                                        // Jika terjadi error memanggil API
+                                        $description = "ERROR CALLING /api/get_semantic: " . $e->getMessage();
+                                    }
+                                }
+
+                                // Simpan Node
                                 Node::create([
-                                    'activity'        => $nodeData['name'],
+                                    'activity'        => $nodeData['name'] ?? '',
                                     'id_sub_activity' => $subActivity->idsub_activity,
                                     'durasi'          => $nodeData['duration'] ?? 0,
-                                    'deskripsi'       => $nodeData['description'] ?? '',
+                                    'deskripsi'       => $description,
                                     'total_price'     => $nodeData['total_price'] ?? 0
                                 ]);
                             }
@@ -211,36 +246,10 @@ class NodeController extends Controller
                 }
             }
 
-            // 2. Setelah semua Node tersimpan, hitung SUM(total_price) untuk project ini
-            $sumTotalPrice = Node::whereHas('subActivity.activity', function ($query) use ($projectId) {
-                $query->where('idproject', $projectId);
-            })
-                ->sum('total_price');
-
-            // 3. Update bobot_rencana setiap node
-            if ($sumTotalPrice > 0) {
-                $nodes = Node::whereHas('subActivity.activity', function ($query) use ($projectId) {
-                    $query->where('idproject', $projectId);
-                })
-                    ->get();
-
-                foreach ($nodes as $node) {
-                    // bobot_rencana = total_price / sumTotalPrice
-                    // Jika ingin menampilkannya sebagai persen, kalikan 100
-                    $node->bobot_rencana = $node->total_price / $sumTotalPrice;
-                    $node->save();
-                }
-            } else {
-                // Jika sumTotalPrice = 0, set semua bobot_rencana = 0
-                Node::whereHas('subActivity.activity', function ($query) use ($projectId) {
-                    $query->where('idproject', $projectId);
-                })->update(['bobot_rencana' => 0]);
-            }
-
             DB::commit();
 
             return response()->json([
-                'message' => 'Data berhasil disimpan dan bobot_rencana sudah dihitung.',
+                'message' => 'Data berhasil disimpan',
                 'success' => true
             ]);
         } catch (\Exception $e) {
@@ -310,48 +319,15 @@ class NodeController extends Controller
 
     public function getRekomendasi(Request $request)
     {
-        $nodeId = $request->input('node_id');
         $projectId = $request->input('project_id');
-
-        if (!$nodeId || !$projectId) {
+        if (!$projectId) {
             return response()->json([
                 'success' => false,
-                'message' => 'Parameter node_id atau project_id tidak ditemukan.'
+                'message' => 'Project ID tidak ditemukan.'
             ], 400);
         }
 
-        // Ambil node A (node yang diklik)
-        $nodeA = Node::where('idnode', $nodeId)
-            ->whereHas('subActivity.activity', function ($query) use ($projectId) {
-                $query->where('idproject', $projectId);
-            })
-            ->with('predecessors.nodeCabang') // include predecessor relationship
-            ->first();
-
-        if (!$nodeA) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Node tidak ditemukan atau bukan bagian dari project ini.'
-            ], 404);
-        }
-
-        // 1. Cek apakah node A sendiri sudah complete
-        //    (bobot_realisasi == bobot_rencana)
-        if ($nodeA->bobot_realisasi < $nodeA->bobot_rencana) {
-            // Node A belum complete => kembalikan pesan
-            // Syarat yang belum complete adalah node A itu sendiri
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda belum memiliki rekomendasi pada node ini karena node ini sendiri belum complete.',
-                'unfinished' => [[
-                    'idnode' => $nodeA->idnode,
-                    'activity' => $nodeA->activity
-                ]]
-            ]);
-        }
-
-        // Node A complete. Cari node-node lain (B) yang menjadikan A sebagai predecessor.
-        // Caranya: ambil semua node di project, lalu filter yang di "predecessor" berisi A.
+        // Ambil semua node dalam project
         $allNodes = Node::with('predecessors.nodeCabang')
             ->join('sub_activity', 'sub_activity.idsub_activity', '=', 'nodes.id_sub_activity')
             ->join('activity', 'activity.idactivity', '=', 'sub_activity.idactivity')
@@ -359,69 +335,64 @@ class NodeController extends Controller
             ->select('nodes.*')
             ->get();
 
-        // Map node by idnode => Node
+        // Map ID => Node untuk memudahkan akses
         $nodeMap = $allNodes->keyBy('idnode');
 
-        $recommended = [];   // Daftar node yang bisa dikerjakan paralel
-        $unfinishedAll = []; // Kumpulan predecessor yang belum complete (untuk alasan)
+        $recommended = [];
 
         foreach ($allNodes as $nodeB) {
-            // Cek apakah nodeB memiliki nodeA sebagai salah satu predecessor
-            $hasAAsPredecessor = false;
+            // 1. Skip jika nodeB sudah complete
+            //    (bobot_realisasi >= bobot_rencana)
+            if ($nodeB->bobot_realisasi >= $nodeB->bobot_rencana) {
+                continue;
+            }
+
+            // 2. Jika nodeB tidak punya predecessor, artinya bisa dikerjakan langsung
+            if ($nodeB->predecessors->isEmpty()) {
+                $recommended[] = [
+                    'idnode'   => $nodeB->idnode,
+                    'activity' => $nodeB->activity
+                ];
+                continue;
+            }
+
+            // 3. Jika nodeB punya predecessor, cek apakah SEMUA predecessor-nya complete
+            $allPredecessorsComplete = true;
             foreach ($nodeB->predecessors as $pred) {
-                if ($pred->node_cabang == $nodeId) {
-                    $hasAAsPredecessor = true;
+                $pNode = $nodeMap[$pred->node_cabang] ?? null;
+                if (!$pNode) {
+                    // Jika predecessor tidak ditemukan, kita anggap belum complete
+                    $allPredecessorsComplete = false;
+                    break;
+                }
+                if ($pNode->bobot_realisasi < $pNode->bobot_rencana) {
+                    // predecessor belum complete
+                    $allPredecessorsComplete = false;
                     break;
                 }
             }
-            if (!$hasAAsPredecessor) {
-                continue; // nodeB tidak bergantung pada nodeA, skip
-            }
 
-            // Sekarang cek: Apakah SEMUA predecessor nodeB complete?
-            $allPredecessorsComplete = true;
-            $tempUnfinished = [];
-            foreach ($nodeB->predecessors as $pred) {
-                $pNode = $nodeMap[$pred->node_cabang] ?? null;
-                if ($pNode && $pNode->bobot_realisasi < $pNode->bobot_rencana) {
-                    $allPredecessorsComplete = false;
-                    $tempUnfinished[] = [
-                        'idnode' => $pNode->idnode,
-                        'activity' => $pNode->activity
-                    ];
-                }
-            }
-
+            // 4. Jika semua predecessor complete, nodeB direkomendasikan
             if ($allPredecessorsComplete) {
-                // nodeB bisa direkomendasikan untuk dijalankan paralel
                 $recommended[] = [
-                    'idnode' => $nodeB->idnode,
+                    'idnode'   => $nodeB->idnode,
                     'activity' => $nodeB->activity
                 ];
-            } else {
-                // nodeB tidak direkomendasikan karena masih ada syarat yang belum complete
-                // Simpan info syarat yang belum complete
-                foreach ($tempUnfinished as $uf) {
-                    $unfinishedAll[] = $uf;
-                }
             }
         }
 
-        // Jika tidak ada node yang direkomendasikan, kembalikan pesan
+        // 5. Jika tidak ada rekomendasi
         if (count($recommended) == 0) {
             return response()->json([
                 'success' => true,
-                'message' => 'Anda belum memiliki rekomendasi pada node ini karena beberapa syarat belum terpenuhi.',
-                'unfinished' => $unfinishedAll
+                'message' => 'Tidak ada rekomendasi (semua node sudah complete atau belum siap).'
             ]);
         }
 
-        // Jika ada node yang direkomendasikan
+        // 6. Kembalikan daftar rekomendasi
         return response()->json([
             'success' => true,
-            'data' => $recommended,
-            'unfinished' => $unfinishedAll, // Mungkin ada predecessor lain juga
+            'data'    => $recommended
         ]);
     }
-  
 }
