@@ -180,32 +180,30 @@ class NodeController extends Controller
         DB::beginTransaction();
 
         try {
+            $projectId = $request->project_id;
+
+            // 1. Simpan data Activity, SubActivity, dan Node (termasuk total_price)
             foreach ($request->activities as $activityData) {
-                // Buat record Activity tanpa durasi
                 $activity = Activity::create([
                     'activity'  => $activityData['name'],
-                    'idproject' => $request->project_id
+                    'idproject' => $projectId
                 ]);
 
-                // Cek apakah ada sub_activities
                 if (isset($activityData['sub_activities'])) {
                     foreach ($activityData['sub_activities'] as $subData) {
-                        // Buat record SubActivity tanpa durasi
                         $subActivity = SubActivity::create([
                             'activity'   => $subData['name'],
                             'idactivity' => $activity->idactivity
                         ]);
 
-                        // Cek apakah ada nodes
                         if (isset($subData['nodes'])) {
                             foreach ($subData['nodes'] as $nodeData) {
-                                // Hanya di Node kita masukkan durasi dan total_price
                                 Node::create([
                                     'activity'        => $nodeData['name'],
                                     'id_sub_activity' => $subActivity->idsub_activity,
                                     'durasi'          => $nodeData['duration'] ?? 0,
                                     'deskripsi'       => $nodeData['description'] ?? '',
-                                    'total_price'     => $nodeData['total_price'] ?? 0  // Pastikan total_price dimasukkan
+                                    'total_price'     => $nodeData['total_price'] ?? 0
                                 ]);
                             }
                         }
@@ -213,10 +211,36 @@ class NodeController extends Controller
                 }
             }
 
+            // 2. Setelah semua Node tersimpan, hitung SUM(total_price) untuk project ini
+            $sumTotalPrice = Node::whereHas('subActivity.activity', function ($query) use ($projectId) {
+                $query->where('idproject', $projectId);
+            })
+                ->sum('total_price');
+
+            // 3. Update bobot_rencana setiap node
+            if ($sumTotalPrice > 0) {
+                $nodes = Node::whereHas('subActivity.activity', function ($query) use ($projectId) {
+                    $query->where('idproject', $projectId);
+                })
+                    ->get();
+
+                foreach ($nodes as $node) {
+                    // bobot_rencana = total_price / sumTotalPrice
+                    // Jika ingin menampilkannya sebagai persen, kalikan 100
+                    $node->bobot_rencana = $node->total_price / $sumTotalPrice;
+                    $node->save();
+                }
+            } else {
+                // Jika sumTotalPrice = 0, set semua bobot_rencana = 0
+                Node::whereHas('subActivity.activity', function ($query) use ($projectId) {
+                    $query->where('idproject', $projectId);
+                })->update(['bobot_rencana' => 0]);
+            }
+
             DB::commit();
 
             return response()->json([
-                'message' => 'Data berhasil disimpan',
+                'message' => 'Data berhasil disimpan dan bobot_rencana sudah dihitung.',
                 'success' => true
             ]);
         } catch (\Exception $e) {
@@ -227,6 +251,7 @@ class NodeController extends Controller
             ], 500);
         }
     }
+
 
     public function updateBobotRealisasi(Request $request)
     {
@@ -398,4 +423,5 @@ class NodeController extends Controller
             'unfinished' => $unfinishedAll, // Mungkin ada predecessor lain juga
         ]);
     }
+  
 }

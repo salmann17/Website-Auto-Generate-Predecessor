@@ -29,4 +29,7 @@ Route::post('/predecessor/delete', [NodeController::class, 'delete'])->name('nod
 Route::post('/saveNodes', [NodeController::class, 'saveNodes'])->name('saveNodes');
 Route::post('/updateBobotRealisasi', [NodeController::class, 'updateBobotRealisasi'])->name('updateBobotRealisasi');
 Route::get('/get-rekomendasi', [NodeController::class, 'getRekomendasi'])->name('node.rekomendasi');
+Route::post('/project/save-all', [ProjectController::class, 'saveAll'])->name('project.saveAll');
+Route::post('/project/rollback-edit', [ProjectController::class, 'rollbackEdit'])->name('project.rollbackEdit');
+
     

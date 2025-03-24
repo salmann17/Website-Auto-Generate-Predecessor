@@ -145,6 +145,10 @@
         <div class="w-full p-4 bg-gray-800 rounded-lg shadow-lg">
             <h1 class="text-4xl font-extrabold text-white mb-4">Detail CPM</h1>
             <div class="flex justify-end" style="gap: 10px">
+                <button class="bg-green-900 hover:bg-green-700 text-white px-4 py-2 rounded"
+                    onclick="saveAll('{{ $projects->idproject }}')">
+                    Save All
+                </button>
                 <button onclick="exportExcel()" class="bg-green-900 hover:bg-green-700 text-white px-4 py-2 rounded-md justify-end">Export to Excel</button>
             </div>
 
@@ -241,6 +245,29 @@
     </div>
 </body>
 <script>
+    function saveAll(projectId) {
+        // AJAX request ke route yang akan set update_status = true
+        $.ajax({
+            url: "{{ route('project.saveAll') }}", // akan didefinisikan di routes
+            type: 'POST',
+            data: {
+                project_id: projectId,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    Swal.fire('Success', 'Project has been saved', 'success')
+                        .then(() => location.reload());
+                } else {
+                    Swal.fire('Error', response.message || 'Gagal update', 'error');
+                }
+            },
+            error: function(xhr) {
+                Swal.fire('Error', 'Terjadi kesalahan saat update status', 'error');
+            }
+        });
+    }
+
     function indexToLetter(idx) {
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         if (idx < 26) {

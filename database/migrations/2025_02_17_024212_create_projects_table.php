@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('nama', 45)->nullable();
             $table->string('alamat', 45)->nullable();
             $table->string('deskripsi', 255)->nullable();
+            $table->boolean('update_status')->default(false);
             $table->timestamps();
         });
     }

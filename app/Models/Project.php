@@ -22,6 +22,7 @@ class Project extends Model
         'nama',
         'activity',
         'deskripsi',
+        'update_status',
         'alamat'
     ];
 

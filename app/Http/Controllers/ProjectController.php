@@ -80,4 +80,48 @@ class ProjectController extends Controller
     {
         //
     }
+    
+    public function saveAll(Request $request)
+    {
+        $projectId = $request->input('project_id');
+        $project = Project::find($projectId);
+
+        if (!$project) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Project not found.'
+            ], 404);
+        }
+
+        // Set update_status = true
+        $project->update_status = true;
+        $project->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Project status updated to true.'
+        ]);
+    }
+
+    public function rollbackEdit(Request $request)
+    {
+        $projectId = $request->input('project_id');
+        $project = Project::find($projectId);
+
+        if (!$project) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Project not found.'
+            ], 404);
+        }
+
+        // Set update_status = false
+        $project->update_status = false;
+        $project->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Project status updated to false.'
+        ]);
+    }
 }
