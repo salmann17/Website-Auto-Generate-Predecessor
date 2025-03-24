@@ -82,7 +82,7 @@
                             <i class="fa-solid fa-pen-to-square"
                                 onclick="updateBobotRealisasi('{{ $node->idnode }}', '{{ $node->bobot_realisasi }}')"
                                 style="cursor: pointer;">
-                            </i> {{$node->bobot_rencana - $node->bobot_realisasi}}%
+                            </i> {{ $node->bobot_realisasi}}%
                             @else
                             <span class="text-green-400">Complete</span>
                             @endif
