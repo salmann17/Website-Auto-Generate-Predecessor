@@ -28,4 +28,5 @@ Route::post('/predecessor/delete', [NodeController::class, 'delete'])->name('nod
 
 Route::post('/saveNodes', [NodeController::class, 'saveNodes'])->name('saveNodes');
 Route::post('/updateBobotRealisasi', [NodeController::class, 'updateBobotRealisasi'])->name('updateBobotRealisasi');
+Route::get('/get-rekomendasi', [NodeController::class, 'getRekomendasi'])->name('nodes.rekomendasi');
     

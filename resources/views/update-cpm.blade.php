@@ -32,6 +32,7 @@
                         <th class="p-2 border-b">Syarat</th>
                         <th class="p-2 border-b">Bobot</th>
                         <th class="p-2 border-b">Update Sisa bobot</th>
+                        <th class="p-2 border-b">Rekomendasi</th>
                     </tr>
                 </thead>
                 <input type="hidden" name="project_id" id="project_id" value="{{ $id }}">
@@ -74,7 +75,12 @@
                             <span class="text-green-400">Complete</span>
                             @endif
                         </td>
-
+                        <td>
+                            <button class="bg-blue-600 text-white px-2 py-1 rounded-md"
+                                    onclick="getRekomendasi('{{ $node->idnode }}')">
+                                Lihat Rekomendasi
+                            </button>
+                        </td>
                     </tr>
                     @endforeach
                     @endforeach
@@ -145,6 +151,56 @@
                 });
             }
         });
+    }
+    function getRekomendasi(nodeId) {
+        const projectId = document.getElementById('project_id').value;
+
+        // Panggil route Laravel untuk mendapatkan rekomendasi
+        $.ajax({
+            url: "{{ route('nodes.rekomendasi') }}",  // route('nodes.rekomendasi') akan kita definisikan di web.php
+            method: 'GET',
+            data: {
+                node_id: nodeId,
+                project_id: projectId
+            },
+            success: function(response) {
+                // Tampilkan hasil rekomendasi di SweetAlert
+                if (response.success) {
+                    Swal.fire({
+                        title: 'Rekomendasi Aktivitas Paralel',
+                        html: formatRekomendasi(response.data),
+                        icon: 'info',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Gagal Mendapatkan Rekomendasi',
+                        text: response.message,
+                        icon: 'error'
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Terjadi kesalahan saat mengambil rekomendasi.',
+                    icon: 'error'
+                });
+            }
+        });
+    }
+
+    // Fungsi bantu untuk memformat data rekomendasi menjadi list HTML
+    function formatRekomendasi(data) {
+        if (!data || data.length === 0) {
+            return '<p>Tidak ada aktivitas yang bisa dijalankan paralel.</p>';
+        }
+        let html = '<ul class="text-left list-disc ml-6">';
+        data.forEach(item => {
+            html += `<li>${item.activity} (ID: ${item.idnode})</li>`;
+        });
+        html += '</ul>';
+        return html;
     }
 </script>
 

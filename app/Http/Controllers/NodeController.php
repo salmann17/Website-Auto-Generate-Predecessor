@@ -258,4 +258,69 @@ class NodeController extends Controller
             'message' => 'Bobot Realisasi berhasil diperbarui.'
         ]);
     }
+    public function getRekomendasi(Request $request)
+    {
+        $nodeId = $request->input('node_id');
+        $projectId = $request->input('project_id');
+
+        if (!$nodeId || !$projectId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parameter node_id atau project_id tidak ditemukan.'
+            ], 400);
+        }
+
+        // 1. Ambil semua node dalam project, kecuali node yang sedang di-klik (opsional).
+        // 2. Tentukan node mana saja yang semua predecessor-nya complete.
+
+        // Ambil semua node di project
+        $allNodes = Node::select('nodes.*')
+            ->join('sub_activity', 'sub_activity.idsub_activity', '=', 'nodes.id_sub_activity')
+            ->join('activity', 'activity.idactivity', '=', 'sub_activity.idactivity')
+            ->where('activity.idproject', $projectId)
+            ->with('predecessors.nodeCabang')
+            ->get();
+
+        // Buat peta (map) node agar mudah diakses
+        $nodeMap = $allNodes->keyBy('idnode');
+
+        // Fungsi untuk cek apakah predecessor complete
+        $isPredecessorComplete = function ($node) use ($nodeMap) {
+            // Node dianggap complete jika bobot_realisasi == bobot_rencana
+            return $node->bobot_realisasi == $node->bobot_rencana;
+        };
+
+        // Kumpulkan node yang dapat dijalankan paralel
+        // Logika sederhana: node bisa dijalankan jika SEMUA predecessor-nya complete.
+        $recommended = [];
+        foreach ($allNodes as $n) {
+            // Skip kalau node ini sendiri sudah complete
+            if ($n->bobot_realisasi == $n->bobot_rencana) {
+                continue;
+            }
+
+            // Cek semua predecessor
+            $allPredecessorsComplete = true;
+            foreach ($n->predecessors as $pred) {
+                $cabang = $nodeMap[$pred->node_cabang] ?? null;
+                if ($cabang && !$isPredecessorComplete($cabang)) {
+                    $allPredecessorsComplete = false;
+                    break;
+                }
+            }
+
+            // Jika semua predecessor complete, node ini dapat dijalankan paralel
+            if ($allPredecessorsComplete) {
+                $recommended[] = [
+                    'idnode' => $n->idnode,
+                    'activity' => $n->activity
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $recommended
+        ]);
+    }
 }
