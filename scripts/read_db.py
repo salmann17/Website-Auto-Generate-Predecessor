@@ -7,9 +7,14 @@ from langchain.schema import HumanMessage
 import re
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from langchain_huggingface import HuggingFaceEmbeddings
+import numpy as np
+from scipy.spatial.distance import cosine
 
 app = Flask(__name__)
 CORS(app)
+
+embedding_function = HuggingFaceEmbeddings(model_name='sentence-transformers/multi-qa-mpnet-base-dot-v1')
 
 def load_api_key():
     """Memuat API key dari file .env"""
@@ -188,6 +193,57 @@ def get_predecessor():
     db.close()
 
     return jsonify({'message': 'success'}), 200
+
+@app.route('/api/get_semantic', methods=['POST'])
+def get_semantic():
+    pekerjaan = request.json.get('pekerjaan')
+    query_embedding = embedding_function.embed_query(pekerjaan)
+    
+    # Koneksi ke database
+    db = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="",
+        db="web-cpm",
+        cursorclass=pymysql.cursors.DictCursor
+    )
+    
+    cursor = db.cursor()
+    cursor.execute("SELECT idnode, activity FROM nodes WHERE deskripsi IS NOT NULL")
+    rows = cursor.fetchall()
+    results = []
+    
+    for row in rows:
+        node_id = row['idnode']
+        activity = row['activity']
+        
+        activity_embedding = embedding_function.embed_query(activity)
+        activity_embedding = np.array(activity_embedding)
+        
+        similarity = 1 - cosine(query_embedding, activity_embedding)
+        results.append({
+            'id' : node_id,
+            'activity' : activity,
+            'similarity' : similarity
+        })
+
+    # Filter hasil dengan similarity >= 0.5
+    filtered_results = [r for r in results if r['similarity'] >= 0.7]
+    if not filtered_results:
+        cursor.close()
+        db.close()
+        # Return null jika tidak ada hasil yang ditemukan
+        return jsonify({'message': None}), 200
+
+    # Urutkan hasil berdasarkan similarity tertinggi dan ambil hasil teratas
+    top_result = sorted(filtered_results, key=lambda x: x['similarity'], reverse=True)[0]
+    cursor.execute("SELECT deskripsi FROM nodes WHERE idnode = %s", (top_result['id'],))
+    output = cursor.fetchone()
+
+    cursor.close()
+    db.close()
+    
+    return jsonify({'message': output}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, port=5025)
