@@ -15,7 +15,7 @@ class ProjectController extends Controller
      */
     public function index()
     {
-        $projects = Project::all();
+        $projects = Project::orderBy('idproject', 'desc')->get();
         return view('view-project', compact('projects'));
     }
 
@@ -80,7 +80,7 @@ class ProjectController extends Controller
     {
         //
     }
-    
+
     public function saveAll(Request $request)
     {
         $projectId = $request->input('project_id');
