@@ -18,10 +18,10 @@ def parse_hierarchy(row):
             'type': 'activity',
             'name': re.sub(r'^\d+\.\s', '', activity)
         }
-    elif re.match(r'^•\s', activity):
+    elif re.match(r'^\*\s', activity):
         return {
             'type': 'sub_activity',
-            'name': re.sub(r'^•\s', '', activity)
+            'name': re.sub(r'^\*\s', '', activity)
         }
     elif re.match(r'^-\s', activity):
         return {
