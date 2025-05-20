@@ -23,78 +23,28 @@
 
             const fileInput = document.getElementById('excel-file');
             if (!fileInput.files || fileInput.files.length === 0) {
-                Swal.close();
                 Swal.fire('Error', 'Pilih file Excel terlebih dahulu', 'error');
                 return;
             }
-
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
+            formData.append('project_id', document.getElementById("project-id").value);
 
             try {
-                const response = await fetch("http://127.0.0.1:5005/api/parse-excel", {
+                const response = await fetch("{{ url('/import-nodes') }}", {
                     method: "POST",
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
                     body: formData
                 });
-
-                if (!response.ok) {
-                    throw new Error('Gagal memproses file di API Python');
-                }
-
                 const result = await response.json();
-                console.log("Data diterima dari Flask:", result.data);
+                if (!result.success) throw new Error(result.message);
 
-                const tableHTML = generateTableHTML(result.data);
-                showResult(tableHTML);
-
-                await saveData(result.data);
-
-                Swal.close();
+                showResult(generateTableHTML(result.data));
+                Swal.fire('Sukses!', result.message, 'success');
             } catch (error) {
-                console.error("Error:", error);
-                Swal.close();
                 Swal.fire('Error', error.message, 'error');
-            }
-        }
-
-        async function saveData(parsedData) {
-            try {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                const projectId = document.getElementById("project-id").value;
-
-                const payload = {
-                    project_id: projectId,
-                    activities: parsedData
-                };
-
-                const response = await fetch('http://127.0.0.1:8000/saveNodes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(result.message || 'Gagal menyimpan data');
-                }
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Sukses!',
-                    text: result.message
-                });
-            } catch (error) {
-                console.error("Error saat menyimpan data:", error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal!',
-                    text: error.message
-                });
             }
         }
 
@@ -146,7 +96,6 @@
         function create_ai() {
             const idProject = document.getElementById("project-id").value;
 
-            // Tampilkan alert waiting (loading)
             Swal.fire({
                 title: 'Tunggu...',
                 text: 'Sedang memproses data...',
@@ -167,7 +116,6 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    // Tutup alert waiting
                     Swal.close();
 
                     if (data.message && data.message.toLowerCase().includes('success')) {
@@ -187,7 +135,6 @@
                     }
                 })
                 .catch(error => {
-                    // Tutup alert waiting jika terjadi error
                     Swal.close();
                     Swal.fire({
                         icon: 'error',

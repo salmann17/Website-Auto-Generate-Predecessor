@@ -261,6 +261,103 @@ class NodeController extends Controller
         }
     }
 
+    public function importNodes(Request $request)
+    {
+        $validated = $request->validate([
+            'project_id' => 'required|integer',
+            'file' => 'required|file|mimes:xls,xlsx'
+        ]);
+        
+        DB::beginTransaction();
+        $client = new Client();
+
+        try {
+            // Step 1: Kirim file ke API /parse-excel Flask
+            $file = $request->file('file');
+            $response = $client->post('http://127.0.0.1:5005/api/parse-excel', [
+                'multipart' => [
+                    [
+                        'name'     => 'file',
+                        'contents' => fopen($file->getPathname(), 'r'),
+                        'filename' => $file->getClientOriginalName(),
+                    ]
+                ]
+            ]);
+            $parsed = json_decode($response->getBody(), true);
+
+            if (!isset($parsed['data'])) {
+                throw new \Exception('Format API Python tidak sesuai');
+            }
+
+            $projectId = $request->input('project_id');
+            $activities = $parsed['data'];
+
+            // Step 2: Proses dan simpan ke DB (seperti saveNodes)
+            foreach ($activities as $activityData) {
+                $activity = Activity::create([
+                    'activity'  => $activityData['name'],
+                    'idproject' => $projectId
+                ]);
+                if (isset($activityData['sub_activities'])) {
+                    foreach ($activityData['sub_activities'] as $subData) {
+                        $subActivity = SubActivity::create([
+                            'activity'   => $subData['name'],
+                            'idactivity' => $activity->idactivity
+                        ]);
+                        if (isset($subData['nodes'])) {
+                            foreach ($subData['nodes'] as $nodeData) {
+                                // Deskripsi: cek & panggil get_semantic kalau kosong
+                                $description = $nodeData['description'] ?? '';
+                                if (trim($description) === '') {
+                                    try {
+                                        $res = $client->post('http://127.0.0.1:5025/api/get_semantic', [
+                                            'json' => [
+                                                'pekerjaan' => $nodeData['name'] ?? ''
+                                            ]
+                                        ]);
+                                        $resBody = json_decode($res->getBody(), true);
+                                        if (
+                                            isset($resBody['message']) &&
+                                            is_array($resBody['message']) &&
+                                            array_key_exists('deskripsi', $resBody['message'])
+                                        ) {
+                                            $description = $resBody['message']['deskripsi'];
+                                        } else {
+                                            $description = 'NO SEMANTIC FOUND';
+                                        }
+                                    } catch (\Exception $e) {
+                                        $description = "ERROR CALLING /api/get_semantic: " . $e->getMessage();
+                                    }
+                                }
+                                // Save Node
+                                Node::create([
+                                    'activity'        => $nodeData['name'] ?? '',
+                                    'id_sub_activity' => $subActivity->idsub_activity,
+                                    'durasi'          => $nodeData['duration'] ?? 0,
+                                    'deskripsi'       => $description,
+                                    'total_price'     => $nodeData['total_price'] ?? 0
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Data berhasil diimport dan disimpan',
+                'success' => true,
+                'data' => $activities  // Kirim data balik ke frontend jika mau tampilkan
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Gagal import: ' . $e->getMessage(),
+                'success' => false
+            ], 500);
+        }
+    }
 
     public function updateBobotRealisasi(Request $request)
     {

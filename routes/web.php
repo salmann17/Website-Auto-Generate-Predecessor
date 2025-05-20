@@ -31,5 +31,8 @@ Route::post('/updateBobotRealisasi', [NodeController::class, 'updateBobotRealisa
 Route::get('/get-rekomendasi', [NodeController::class, 'getRekomendasi'])->name('node.rekomendasi');
 Route::post('/project/save-all', [ProjectController::class, 'saveAll'])->name('project.saveAll');
 Route::post('/project/rollback-edit', [ProjectController::class, 'rollbackEdit'])->name('project.rollbackEdit');
+Route::post('/import-nodes', [NodeController::class, 'importNodes']);
+
+
 
     
