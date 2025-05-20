@@ -18,6 +18,8 @@ return new class extends Migration
             $table->integer('prioritas')->nullable();
             $table->longText('deskripsi')->nullable(); 
             $table->integer('total_price')->nullable();
+            $table->string('UoM', 45)->nullable();
+            $table->integer('volume')->nullable();
             $table->string('bobot_rencana', 45)->nullable();
             $table->string('bobot_realisasi', 45)->nullable();
 
