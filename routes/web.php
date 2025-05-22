@@ -32,6 +32,7 @@ Route::get('/get-rekomendasi', [NodeController::class, 'getRekomendasi'])->name(
 Route::post('/project/save-all', [ProjectController::class, 'saveAll'])->name('project.saveAll');
 Route::post('/project/rollback-edit', [ProjectController::class, 'rollbackEdit'])->name('project.rollbackEdit');
 Route::post('/import-nodes', [NodeController::class, 'importNodes']);
+Route::post('/run-ai-predecessor', [NodeController::class, 'runAIPredecessor']);
 
 
 

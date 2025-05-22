@@ -105,20 +105,22 @@
                 }
             });
 
-            fetch('http://127.0.0.1:5025/api/get_predecessor', {
+            fetch('{{ url("/run-ai-predecessor") }}', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        idproject: idProject
+                        project_id: idProject
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
                     Swal.close();
 
-                    if (data.message && data.message.toLowerCase().includes('success')) {
+                    if (data.success) {
                         Swal.fire({
                             icon: 'success',
                             title: 'Berhasil!',
@@ -130,7 +132,7 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: data.error || 'Terjadi kesalahan saat memproses data.'
+                            text: data.message || 'Terjadi kesalahan saat memproses data.'
                         });
                     }
                 })
@@ -151,7 +153,7 @@
         Create Prompt for {{ $nama }}
     </h1>
     <input type="hidden" id="project-id" value="{{ $id }}">
-
+ 
     <div class="max-w-4xl mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
         <div class="mb-4">
             <label for="excel-file" class="block text-white mb-2">Upload File Excel:</label>

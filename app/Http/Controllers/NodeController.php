@@ -261,13 +261,50 @@ class NodeController extends Controller
         }
     }
 
+    public function runAIPredecessor(Request $request)
+    {
+        $validated = $request->validate([
+            'project_id' => 'required|integer',
+        ]);
+
+        $projectId = $request->json('project_id');
+        $client = new Client();
+
+        try {
+            $response = $client->post('http://127.0.0.1:5025/api/get_predecessor', [
+                'json' => [
+                    'idproject' => $projectId,
+                ]
+            ]);
+
+            $result = json_decode($response->getBody(), true);
+
+            if (isset($result['message']) && strtolower($result['message']) == 'success') {
+                return response()->json([
+                    'success' => true,
+                    'message' => $result['message'],
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['error'] ?? 'Unknown error from AI API',
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memanggil API Flask: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function importNodes(Request $request)
     {
         $validated = $request->validate([
             'project_id' => 'required|integer',
             'file' => 'required|file|mimes:xls,xlsx'
         ]);
-        
+
         DB::beginTransaction();
         $client = new Client();
 
