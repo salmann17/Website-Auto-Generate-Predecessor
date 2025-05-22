@@ -1,38 +1,42 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import openpyxl
-import re
 import io
 
 app = Flask(__name__)
 CORS(app)
 
-def parse_hierarchy(row):
-    activity = str(row[0]).strip() if row[0] else ''
-    duration = row[1] if len(row) > 1 else 0
-    description = row[2] if len(row) > 2 else ''
-    total_price = row[3] if len(row) > 3 else 0  
-
-    if re.match(r'^\d+\.\s', activity):
+def parse_row(row):
+    # Kolom: 0=No, 1=Detail Item, 2=Duration, 3=Description, 4=Total Price, 5=Vol, 6=UoM
+    no_col = str(row[0]).strip() if row[0] is not None else ''
+    name = str(row[1]).strip() if row[1] else ''
+    vol = row[2] if len(row) > 5 and row[5] else 0
+    uom = str(row[3]).strip() if len(row) > 6 and row[6] else ''
+    duration = row[4] if len(row) > 2 and row[2] else 0
+    description = row[5] if len(row) > 3 and row[3] else ''
+    total_price = row[6] if len(row) > 4 and row[4] else 0
+    
+    if no_col.isdigit():
         return {
             'type': 'activity',
-            'name': re.sub(r'^\d+\.\s', '', activity)
+            'name': name
         }
-    elif re.match(r'^\*\s', activity):
+    elif no_col == '*':
         return {
             'type': 'sub_activity',
-            'name': re.sub(r'^\*\s', '', activity)
+            'name': name
         }
-    elif re.match(r'^-\s', activity):
+    elif no_col == '-':
         return {
             'type': 'node',
-            'name': re.sub(r'^-\s', '', activity),
+            'name': name,
             'duration': duration,
             'description': description,
-            'total_price': total_price  
+            'total_price': total_price,
+            'vol': vol,
+            'uom': uom
         }
     return None
-
 
 @app.route('/api/parse-excel', methods=['POST'])
 def parse_excel():
@@ -49,7 +53,8 @@ def parse_excel():
         current_sub = None
 
         for row in sheet.iter_rows(min_row=2, values_only=True):  
-            parsed = parse_hierarchy(row)
+            parsed = parse_row(row)
+            print(parsed)
             if not parsed:
                 continue
 

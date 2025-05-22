@@ -372,7 +372,9 @@ class NodeController extends Controller
                                     'id_sub_activity' => $subActivity->idsub_activity,
                                     'durasi'          => $nodeData['duration'] ?? 0,
                                     'deskripsi'       => $description,
-                                    'total_price'     => $nodeData['total_price'] ?? 0
+                                    'total_price'     => $nodeData['total_price'] ?? 0,
+                                    'UoM'             => $nodeData['uom'] ?? '',
+                                    'volume'         => $nodeData['vol'] ?? 0,
                                 ]);
                             }
                         }

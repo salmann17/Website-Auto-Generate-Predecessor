@@ -23,7 +23,9 @@ class Node extends Model
         'deskripsi',
         'bobot_rencana',
         'bobot_realisasi',
-        'id_sub_activity'
+        'id_sub_activity',
+        'UoM',
+        'volume'
     ];
 
     public function subActivity()
