@@ -398,59 +398,47 @@ class NodeController extends Controller
         }
     }
 
-    public function updateBobotRealisasi(Request $request)
+    public function updateVolumeRealisasi(Request $request)
     {
-        // Validasi input
         $request->validate([
-            'nodeId'    => 'required|integer',
-            'increment' => 'required|numeric',
-            'project_id' => 'required|integer',
+            'node_id' => 'required|integer',
+            'tambah' => 'required|numeric|min:0',
         ]);
 
-        // Cari node
-        $node = Node::where('idnode', $request->nodeId)
-            ->whereHas('subActivity.activity', function ($query) use ($request) {
-                $query->where('idproject', $request->project_id);
-            })
-            ->first();
-
+        $node = Node::find($request->node_id);
         if (!$node) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Node tidak ditemukan atau bukan bagian dari project ini.'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Node tidak ditemukan.'], 404);
         }
 
-        // Hitung bobot realisasi baru
-        $oldRealisasi = (float) $node->bobot_realisasi;
-        $increment    = (float) $request->increment;
-        $bobotRencana = (float) $node->bobot_rencana;
+        $prev = (float) $node->volume_realisasi;
+        $tambah = (float) $request->tambah;
+        $volume_baru = $prev + $tambah;
 
-        // Tambahkan bobot realisasi lama dengan increment
-        $newRealisasi = $oldRealisasi + $increment;
-
-        // DI SINILAH ANDA MENERAPKAN round():
-        // Membulatkan ke 2 desimal (silakan ganti 2 menjadi jumlah desimal yang Anda inginkan)
-        $newRealisasi = round($newRealisasi, 3);
-        $bobotRencana = round($bobotRencana, 3);
-
-        // Setelah dibulatkan, barulah lakukan pengecekan
-        if ($newRealisasi > $bobotRencana) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda mengupdate bobot terlalu besar dari bobot rencana.'
-            ]);
+        // Pastikan tidak lebih dari volume rencana
+        if ($volume_baru > $node->volume) {
+            return response()->json(['success' => false, 'message' => 'Volume realisasi melebihi volume rencana!'], 422);
         }
 
-        // Update node
-        $node->bobot_realisasi = $newRealisasi;
+        // Update volume realisasi
+        $node->volume_realisasi = $volume_baru;
+
+        // Hitung bobot realisasi
+        $bobot_realisasi = 0;
+        if ($node->volume > 0 && $node->bobot_rencana > 0) {
+            $bobot_realisasi = round(($volume_baru / $node->volume) * $node->bobot_rencana, 3);
+        }
+        $node->bobot_realisasi = $bobot_realisasi;
+
         $node->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Bobot Realisasi berhasil diperbarui.'
+            'message' => 'Volume realisasi & bobot realisasi berhasil diupdate.',
+            'volume_realisasi_baru' => $volume_baru,
+            'bobot_realisasi_baru' => $bobot_realisasi
         ]);
     }
+
 
 
     public function getRekomendasi(Request $request)

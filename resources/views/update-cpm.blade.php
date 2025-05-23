@@ -22,7 +22,7 @@
         <div class="w-full p-4 bg-gray-800 rounded-lg shadow-lg">
             <h1 class="text-4xl font-extrabold text-white mb-4">Update CPM</h1>
             <div class="flex justify-end" style="gap: 10px">
-            <a href="{{ route('view-project') }}">
+                <a href="{{ route('view-project') }}">
                     <button class="px-8 py-3 bg-blue-600 text-white rounded-md shadow-lg transition duration-300 hover:bg-blue-700 font-inter">
                         Back
                     </button>
@@ -31,7 +31,7 @@
                     onclick="rollbackEdit('{{ $projects->idproject }}')">
                     Rollback Edit
                 </button>
-               
+
             </div>
 
             <table id="tableData" class="w-full text-white border-separate border-spacing-2">
@@ -76,20 +76,27 @@
                             <h2 value="{{ $pred->nodeCabang->idnode ?? '' }}"> {{ $pred->nodeCabang->activity ?? '-' }}</h2>
                             @endforeach
                         </td>
+
                         <td> {{$node->volume}} {{$node->UoM}} </td>
-                        <td></td>
+
+                        <td>
+                            <button
+                                class="bg-yellow-600 text-white px-2 py-1 rounded-md"
+                                onclick="updateVolumeRealisasi('{{ $node->idnode }}', '{{ $node->volume_realisasi ?? 0 }}', '{{ $node->volume }}', '{{ $node->bobot_rencana }}')">
+                                <i class="fa-solid fa-pen"></i>
+                                Update Volume
+                            </button>
+                            <div class="text-xs mt-1 text-blue-300">
+                                Realisasi: <span id="node-{{ $node->idnode }}-vol-realisasi">{{ $node->volume_realisasi ?? 0 }}</span>
+                            </div>
+                        </td>
+
                         <td> {{$node->bobot_rencana}}%</td>
 
-                        <td id="node-{{ $node->idnode }}-bobot-rencana" class="text-yellow-400">
-                            @if (($node->bobot_rencana - $node->bobot_realisasi) > 0)
-                            <i class="fa-solid fa-pen-to-square"
-                                onclick="updateBobotRealisasi('{{ $node->idnode }}', '{{ $node->bobot_realisasi }}')"
-                                style="cursor: pointer;">
-                            </i> {{ $node->bobot_realisasi}}%
-                            @else
-                            <span class="text-green-400">Complete</span>
-                            @endif
+                        <td id="node-{{ $node->idnode }}-bobot-realisasi" class="text-yellow-400">
+                            {{ number_format($node->bobot_realisasi, 3) ?? 0 }}%
                         </td>
+
                         <td>
                             <button class="bg-blue-600 text-white px-2 py-1 rounded-md"
                                 onclick="getRekomendasi('{{ $node->idnode }}')">
@@ -129,67 +136,56 @@
         });
     }
 
-    function updateBobotRealisasi(nodeId, currentBobotRealisasi) {
-        const projectId = document.getElementById('project_id').value;
-
+    function updateVolumeRealisasi(nodeId, prevVolumeRealisasi, nodeVolume, bobotRencana) {
+        // Pakai SweetAlert untuk input angka
         Swal.fire({
-            title: 'Update Bobot Realisasi',
+            title: 'Update Volume Realisasi',
             input: 'number',
-            inputValue: '', // kosong, karena user akan memasukkan tambahan
-            inputLabel: 'Masukkan penambahan Bobot Realisasi (boleh desimal)',
-            inputAttributes: {
-                step: '0.01', // Mengizinkan input desimal
-                min: '0' // Opsi: minimal 0
-            },
+            inputLabel: 'Masukkan volume realisasi (akan dijumlahkan ke volume sebelumnya)',
+            inputValue: 0,
             showCancelButton: true,
             confirmButtonText: 'Update',
-            showLoaderOnConfirm: true,
-            preConfirm: (addedValue) => {
-                if (!addedValue) {
-                    Swal.showValidationMessage('Mohon masukkan bobot realisasi (tambahan)!');
-                    return false;
-                }
-
-                const increment = parseFloat(addedValue);
-                if (isNaN(increment)) {
-                    Swal.showValidationMessage('Masukkan angka yang valid (boleh desimal)!');
-                    return false;
-                }
-
-                // Lakukan AJAX ke server
-                return $.ajax({
-                        url: "{{ route('updateBobotRealisasi') }}", // Pastikan route Anda benar
-                        method: 'POST',
-                        data: {
-                            nodeId: nodeId,
-                            increment: increment, // <-- Kirim nilai tambahan
-                            project_id: projectId,
-                            _token: $('meta[name="csrf-token"]').attr('content')
-                        }
-                    })
-                    .done(function(response) {
-                        if (!response.success) {
-                            // Jika ada error, kita munculkan ke user
-                            Swal.showValidationMessage(response.message || 'Gagal update!');
-                            return false;
-                        }
-                        return response;
-                    })
-                    .fail(function(error) {
-                        Swal.showValidationMessage(`Request gagal: ${error.responseText}`);
-                    });
+            inputAttributes: {
+                min: 0,
+                step: 0.01
             },
-            allowOutsideClick: () => !Swal.isLoading()
+            preConfirm: (value) => {
+                if (value === "" || value === null) {
+                    Swal.showValidationMessage('Mohon masukkan angka!');
+                    return false;
+                }
+                let val = parseFloat(value);
+                if (isNaN(val) || val < 0) {
+                    Swal.showValidationMessage('Angka tidak valid!');
+                    return false;
+                }
+                return val;
+            }
         }).then((result) => {
             if (result.isConfirmed) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil',
-                    text: 'Bobot Realisasi berhasil diperbarui.',
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(() => {
-                    location.reload();
+                let tambah = parseFloat(result.value);
+                // Kirim ke backend
+                $.ajax({
+                    url: "{{ route('updateVolumeRealisasi') }}",
+                    method: 'POST',
+                    data: {
+                        node_id: nodeId,
+                        tambah: tambah,
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Update tampilan volume realisasi & bobot realisasi
+                            $('#node-' + nodeId + '-vol-realisasi').text(response.volume_realisasi_baru);
+                            $('#node-' + nodeId + '-bobot-realisasi').text(response.bobot_realisasi_baru + '%');
+                            Swal.fire('Berhasil', response.message, 'success');
+                        } else {
+                            Swal.fire('Gagal', response.message || 'Gagal update', 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Error', xhr.responseJSON?.message || 'Terjadi error', 'error');
+                    }
                 });
             }
         });
