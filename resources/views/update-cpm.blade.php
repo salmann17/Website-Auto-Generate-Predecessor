@@ -79,22 +79,33 @@
 
                         <td> {{$node->volume}} {{$node->UoM}} </td>
 
-                        <td>
+                        <td class="text-center align-middle" id="node-{{ $node->idnode }}-vol-cell">
+                            @if($node->volume_realisasi >= $node->volume && $node->volume > 0)
+                            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-2xl bg-green-100 text-green-700 font-semibold shadow-sm text-xs">
+                                <i class="fa-solid fa-circle-check"></i> Complete
+                            </span>
+                            <div class="text-xs text-green-500 mt-1">
+                                {{ $node->volume_realisasi ?? 0 }} / {{ $node->volume }} {{ $node->UoM }}
+                            </div>
+                            @else
                             <button
-                                class="bg-yellow-600 text-white px-2 py-1 rounded-md"
-                                onclick="updateVolumeRealisasi('{{ $node->idnode }}', '{{ $node->volume_realisasi ?? 0 }}', '{{ $node->volume }}', '{{ $node->bobot_rencana }}')">
-                                <i class="fa-solid fa-pen"></i>
+                                class="inline-flex items-center gap-2 px-3 py-1 rounded-2xl bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition shadow-md font-semibold text-xs focus:ring-2 focus:ring-yellow-300"
+                                onclick="updateVolumeRealisasi('{{ $node->idnode }}', '{{ $node->volume_realisasi ?? 0 }}', '{{ $node->volume }}', '{{ $node->bobot_rencana }}', '{{ $node->UoM }}')"
+                                title="Update Volume Realisasi">
+                                <i class="fa-solid fa-plus-circle"></i>
                                 Update Volume
                             </button>
-                            <div class="text-xs mt-1 text-blue-300">
-                                Realisasi: <span id="node-{{ $node->idnode }}-vol-realisasi">{{ $node->volume_realisasi ?? 0 }}</span>
+                            <div class="text-xs mt-1 text-blue-300 font-mono">
+                                Realisasi: <span id="node-{{ $node->idnode }}-vol-realisasi">{{ $node->volume_realisasi ?? 0 }}</span> / {{ $node->volume }} {{ $node->UoM }}
                             </div>
+                            @endif
                         </td>
+
 
                         <td> {{$node->bobot_rencana}}%</td>
 
                         <td id="node-{{ $node->idnode }}-bobot-realisasi" class="text-yellow-400">
-                            {{ number_format($node->bobot_realisasi, 3) ?? 0 }}%
+                            {{ number_format($node->bobot_realisasi, 2) ?? 0 }}%
                         </td>
 
                         <td>
@@ -136,27 +147,27 @@
         });
     }
 
-    function updateVolumeRealisasi(nodeId, prevVolumeRealisasi, nodeVolume, bobotRencana) {
-        // Pakai SweetAlert untuk input angka
+    function updateVolumeRealisasi(nodeId, prevVolumeRealisasi, nodeVolume, bobotRencana, uom) {
         Swal.fire({
             title: 'Update Volume Realisasi',
             input: 'number',
-            inputLabel: 'Masukkan volume realisasi (akan dijumlahkan ke volume sebelumnya)',
+            inputLabel: `Masukkan volume realisasi baru (max: ${nodeVolume - prevVolumeRealisasi} ${uom})`,
             inputValue: 0,
-            showCancelButton: true,
-            confirmButtonText: 'Update',
             inputAttributes: {
                 min: 0,
+                max: nodeVolume - prevVolumeRealisasi,
                 step: 0.01
             },
+            showCancelButton: true,
+            confirmButtonText: 'Update',
             preConfirm: (value) => {
-                if (value === "" || value === null) {
-                    Swal.showValidationMessage('Mohon masukkan angka!');
+                let val = parseFloat(value);
+                if (isNaN(val) || val <= 0) {
+                    Swal.showValidationMessage('Masukkan angka lebih dari 0!');
                     return false;
                 }
-                let val = parseFloat(value);
-                if (isNaN(val) || val < 0) {
-                    Swal.showValidationMessage('Angka tidak valid!');
+                if ((parseFloat(prevVolumeRealisasi) + val) > parseFloat(nodeVolume)) {
+                    Swal.showValidationMessage('Total realisasi melebihi volume!');
                     return false;
                 }
                 return val;
@@ -164,7 +175,6 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 let tambah = parseFloat(result.value);
-                // Kirim ke backend
                 $.ajax({
                     url: "{{ route('updateVolumeRealisasi') }}",
                     method: 'POST',
@@ -175,8 +185,21 @@
                     },
                     success: function(response) {
                         if (response.success) {
-                            // Update tampilan volume realisasi & bobot realisasi
-                            $('#node-' + nodeId + '-vol-realisasi').text(response.volume_realisasi_baru);
+                            // Update cell UI
+                            if (parseFloat(response.volume_realisasi_baru) >= parseFloat(nodeVolume)) {
+                                // Ganti jadi Complete badge!
+                                $('#node-' + nodeId + '-vol-cell').html(
+                                    `<span class="inline-flex items-center gap-2 px-3 py-1 rounded-2xl bg-green-100 text-green-700 font-semibold shadow-sm text-xs">
+                                    <i class="fa-solid fa-circle-check"></i> Complete
+                                </span>
+                                <div class="text-xs text-green-500 mt-1">
+                                    ${response.volume_realisasi_baru} / ${nodeVolume} ${uom}
+                                </div>`
+                                );
+                            } else {
+                                $('#node-' + nodeId + '-vol-realisasi').text(response.volume_realisasi_baru);
+                            }
+                            // Update bobot realisasi kolom lain
                             $('#node-' + nodeId + '-bobot-realisasi').text(response.bobot_realisasi_baru + '%');
                             Swal.fire('Berhasil', response.message, 'success');
                         } else {
@@ -190,6 +213,7 @@
             }
         });
     }
+
 
 
     function getRekomendasi(nodeId) {
