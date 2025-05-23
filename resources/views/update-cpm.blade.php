@@ -34,7 +34,7 @@
                                 {{ $progressPersen }}%
                             </div>
                             <div class="text-sm text-blue-200 font-mono mt-1">
-                                ({{ number_format($totalBobotRealisasi, 2) }} / {{ number_format($totalBobotRencana, 2) }} % dari rencana)
+                                ({{ number_format($totalBobotRealisasi, 2) }} / {{ number_format($totalBobotRencana, 2) }} dari rencana)
                             </div>
                         </div>
                         <div class="flex flex-col items-center justify-center min-w-[120px]">
