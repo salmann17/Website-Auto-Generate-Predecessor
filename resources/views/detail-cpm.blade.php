@@ -147,7 +147,7 @@
             <div class="flex justify-end" style="gap: 10px">
             <a href="{{ route('view-project') }}">
                     <button class="px-8 py-3 bg-blue-600 text-white rounded-md shadow-lg transition duration-300 hover:bg-blue-700 font-inter">
-                        Back
+                        <i class="fa-solid fa-arrow-left"></i> Back
                     </button>
                 </a>
                 <button class="bg-green-900 hover:bg-green-700 text-white px-4 py-2 rounded"

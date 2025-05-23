@@ -18,20 +18,70 @@
 
 <body class="bg-gradient-to-tl from-black via-gray-900 to-blue-900 dark:from-black dark:via-gray-900 dark:to-blue-900 transition-all duration-500 font-inter">
 
-    <div class="flex min-h-screen px-4 py-8">
+    <div class="flex min-h-screen px-2 py-2">
         <div class="w-full p-4 bg-gray-800 rounded-lg shadow-lg">
             <h1 class="text-4xl font-extrabold text-white mb-4">Update CPM</h1>
-            <div class="flex justify-end" style="gap: 10px">
-                <a href="{{ route('view-project') }}">
-                    <button class="px-8 py-3 bg-blue-600 text-white rounded-md shadow-lg transition duration-300 hover:bg-blue-700 font-inter">
-                        Back
-                    </button>
-                </a>
-                <button class="bg-red-600 text-white px-4 py-2 rounded"
-                    onclick="rollbackEdit('{{ $projects->idproject }}')">
-                    Rollback Edit
-                </button>
 
+            <div class="w-full mx-auto mb-2">
+                <div class="flex flex-wrap items-center justify-between bg-gradient-to-r from-blue-900 via-blue-600 to-green-400 shadow-xl rounded-2xl p-6 mb-2">
+                    {{-- Progress Info --}}
+                    <div class="flex items-center gap-6">
+                        <div>
+                            <div class="uppercase text-xs font-bold text-blue-100 mb-1 tracking-widest">
+                                Progress Total Realisasi Proyek
+                            </div>
+                            <div class="text-3xl font-extrabold text-white drop-shadow">
+                                {{ $progressPersen }}%
+                            </div>
+                            <div class="text-sm text-blue-200 font-mono mt-1">
+                                ({{ number_format($totalBobotRealisasi, 2) }} / {{ number_format($totalBobotRencana, 2) }} % dari rencana)
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-center justify-center min-w-[120px]">
+                            <!-- Circular Progress SVG -->
+                            <svg class="w-20 h-20" viewBox="0 0 36 36">
+                                <circle
+                                    class="text-blue-200"
+                                    stroke="currentColor"
+                                    stroke-width="3"
+                                    fill="none"
+                                    cx="18"
+                                    cy="18"
+                                    r="16" />
+                                <circle
+                                    class="text-green-400"
+                                    stroke="currentColor"
+                                    stroke-width="3.5"
+                                    fill="none"
+                                    cx="18"
+                                    cy="18"
+                                    r="16"
+                                    stroke-dasharray="100, 100"
+                                    stroke-dashoffset="{{ 100 - $progressPersen }}"
+                                    stroke-linecap="round"
+                                    style="transition: stroke-dashoffset 0.6s cubic-bezier(0.4,0,0.2,1);" />
+                                <text x="18" y="20.5" text-anchor="middle" class="fill-green-400 font-bold text-base" style="font-size:10px">
+                                    {{ $progressPersen }}%
+                                </text>
+                            </svg>
+                            <div class="text-xs text-white font-bold mt-2">
+                                Progress Bar
+                            </div>
+                        </div>
+                    </div>
+                    {{-- Button Group --}}
+                    <div class="flex gap-2">
+                        <a href="{{ route('view-project') }}">
+                            <button class="px-8 py-3 bg-blue-600 text-white rounded-md shadow-lg transition duration-300 hover:bg-blue-700 font-inter">
+                                <i class="fa-solid fa-arrow-left"></i> Back
+                            </button>
+                        </a>
+                        <button class="bg-red-600 text-white px-4 py-2 rounded shadow font-semibold hover:bg-red-700"
+                            onclick="rollbackEdit('{{ $projects->idproject }}')">
+                            <i class="fa-solid fa-rotate-left"></i> Rollback Edit
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <table id="tableData" class="w-full text-white border-separate border-spacing-2">
@@ -201,7 +251,15 @@
                             }
                             // Update bobot realisasi kolom lain
                             $('#node-' + nodeId + '-bobot-realisasi').text(response.bobot_realisasi_baru + '%');
-                            Swal.fire('Berhasil', response.message, 'success');
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: response.message,
+                                timer: 1200,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
                         } else {
                             Swal.fire('Gagal', response.message || 'Gagal update', 'error');
                         }
@@ -213,8 +271,6 @@
             }
         });
     }
-
-
 
     function getRekomendasi(nodeId) {
         const projectId = document.getElementById('project_id').value;

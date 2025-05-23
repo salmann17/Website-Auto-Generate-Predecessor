@@ -49,6 +49,20 @@ class NodeController extends Controller
             ])
             ->get();
 
+        $totalBobotRealisasi = $activities
+            ->flatMap(fn($a) => $a->subActivities)
+            ->flatMap(fn($s) => $s->nodes)
+            ->sum('bobot_realisasi');
+
+        $totalBobotRencana = $activities
+            ->flatMap(fn($a) => $a->subActivities)
+            ->flatMap(fn($s) => $s->nodes)
+            ->sum('bobot_rencana');
+
+        $progressPersen = $totalBobotRencana > 0
+            ? round(($totalBobotRealisasi / $totalBobotRencana) * 100, 1)
+            : 0;
+
         $allNodes = Node::join('sub_activity', 'nodes.id_sub_activity', '=', 'sub_activity.idsub_activity')
             ->join('activity', 'sub_activity.idactivity', '=', 'activity.idactivity')
             ->where('activity.idproject', $projects->idproject)
@@ -56,7 +70,7 @@ class NodeController extends Controller
             ->get();
 
 
-        return view('update-cpm', compact('projects', 'activities', 'allNodes', 'id'));
+        return view('update-cpm', compact('projects', 'activities', 'allNodes', 'id', 'progressPersen', 'totalBobotRealisasi', 'totalBobotRencana'));
     }
 
     public function updateTotalPrice(Request $request)
