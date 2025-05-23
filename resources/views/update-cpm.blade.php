@@ -40,8 +40,10 @@
                         <th class="p-2 border-b">Activity</th>
                         <th class="p-2 border-b">Durasi </th>
                         <th class="p-2 border-b">Syarat</th>
-                        <th class="p-2 border-b">Bobot</th>
-                        <th class="p-2 border-b">Update Sisa bobot</th>
+                        <th class="p-2 border-b">Volume</th>
+                        <th class="p-2 border-b">Update Volume Realisasi</th>
+                        <th class="p-2 border-b">Bobot RAB</th>
+                        <th class="p-2 border-b">Bobot Realisasi</th>
                         <th class="p-2 border-b">Rekomendasi</th>
                     </tr>
                 </thead>
@@ -74,7 +76,8 @@
                             <h2 value="{{ $pred->nodeCabang->idnode ?? '' }}"> {{ $pred->nodeCabang->activity ?? '-' }}</h2>
                             @endforeach
                         </td>
-
+                        <td> {{$node->volume}} {{$node->UoM}} </td>
+                        <td></td>
                         <td> {{$node->bobot_rencana}}%</td>
 
                         <td id="node-{{ $node->idnode }}-bobot-rencana" class="text-yellow-400">
