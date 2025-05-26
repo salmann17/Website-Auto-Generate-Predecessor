@@ -29,13 +29,7 @@
                         <div>
                             <div class="uppercase text-xs font-bold text-blue-100 mb-1 tracking-widest">
                                 Progress Total Realisasi Proyek
-                            </div>
-                            <div class="text-3xl font-extrabold text-white drop-shadow">
-                                {{ $progressPersen }}%
-                            </div>
-                            <div class="text-sm text-blue-200 font-mono mt-1">
-                                ({{ number_format($totalBobotRealisasi, 2) }} / {{ number_format($totalBobotRencana, 2) }} dari rencana)
-                            </div>
+                            </div>                         
                         </div>
                         <div class="flex flex-col items-center justify-center min-w-[120px]">
                             <!-- Circular Progress SVG -->
