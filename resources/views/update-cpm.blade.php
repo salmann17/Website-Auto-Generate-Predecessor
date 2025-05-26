@@ -76,6 +76,11 @@
                                 <i class="fa-solid fa-arrow-left"></i> Back
                             </button>
                         </a>
+                        <button
+                            onclick="exportToExcel()"
+                            class="bg-green-600 text-white px-4 py-2 rounded shadow font-semibold hover:bg-green-700">
+                            <i class="fa-solid fa-file-excel"></i> Export Excel
+                        </button>
                         <button class="bg-red-600 text-white px-4 py-2 rounded shadow font-semibold hover:bg-red-700"
                             onclick="rollbackEdit('{{ $projects->idproject }}')">
                             <i class="fa-solid fa-rotate-left"></i> Rollback Edit
@@ -174,6 +179,154 @@
     </div>
 </body>
 <script>
+    async function exportToExcel() {
+        const projectName = document.getElementById('project_name').value || 'Unknown Project';
+        const today = new Date();
+        const downloadDate = today.toLocaleDateString('id-ID', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        // Ambil tabel
+        const table = document.getElementById('tableData');
+        if (!table) {
+            Swal.fire('Error', 'Tabel tidak ditemukan!', 'error');
+            return;
+        }
+
+        // Buat workbook & worksheet
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('CPM Progress');
+
+        // Header atas: nama proyek & tanggal download
+        worksheet.mergeCells('A1:E1');
+        worksheet.getCell('A1').value = `Nama Proyek: ${projectName}`;
+        worksheet.getCell('A1').font = {
+            bold: true,
+            size: 14
+        };
+        worksheet.mergeCells('A2:E2');
+        worksheet.getCell('A2').value = `Diunduh pada: ${downloadDate}`;
+        worksheet.getCell('A2').font = {
+            italic: true,
+            size: 12
+        };
+
+        // Proses header tabel dari <thead> HTML, skip kolom "Durasi", "Syarat", "Rekomendasi"
+        const thead = table.querySelector('thead');
+        let headers = [];
+        if (thead) {
+            thead.querySelectorAll('th').forEach((th, idx) => {
+                // Skip index kolom 1 (Durasi), 2 (Syarat), dan kolom terakhir (Rekomendasi)
+                if (![1, 2, 7].includes(idx)) {
+                    headers.push(th.textContent.trim());
+                }
+            });
+            worksheet.addRow([]);
+            worksheet.addRow(headers);
+
+            // Bold dan center header Excel
+            const headerRow = worksheet.getRow(3);
+            headerRow.font = {
+                bold: true
+            };
+            headerRow.alignment = {
+                horizontal: 'center',
+                vertical: 'middle'
+            };
+            headerRow.eachCell((cell) => {
+                cell.border = {
+                    top: {
+                        style: 'thin'
+                    },
+                    left: {
+                        style: 'thin'
+                    },
+                    bottom: {
+                        style: 'thin'
+                    },
+                    right: {
+                        style: 'thin'
+                    }
+                };
+            });
+        }
+
+        // Ambil isi tabel, skip kolom 1, 2, 7
+        const tbody = table.querySelector('tbody');
+        let rowNum = 4; // Mulai setelah header
+        if (tbody) {
+            tbody.querySelectorAll('tr').forEach((tr, trIdx) => {
+                const row = [];
+                tr.querySelectorAll('td').forEach((td, tdIdx) => {
+                    if (![1, 2, 7].includes(tdIdx)) {
+                        let value = td.innerText.replace(/\s+/g, ' ').trim();
+                        row.push(value === "" ? "-" : value);
+                    }
+                });
+                if (row.length > 0) {
+                    worksheet.addRow(row);
+                    // Warna even/odd
+                    const excelRow = worksheet.getRow(rowNum++);
+                    const isEven = (trIdx % 2 === 0);
+                    excelRow.eachCell((cell, colNumber) => {
+                        cell.fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: {
+                                argb: isEven ? 'FFDBEAFE' : 'FF2563EB'
+                            }
+                        };
+                        cell.font = {
+                            color: {
+                                argb: isEven ? 'FF000000' : 'FFFFFFFF'
+                            }
+                        };
+                        cell.alignment = {
+                            horizontal: colNumber === 1 ? 'left' : 'center',
+                            vertical: 'middle'
+                        };
+                        cell.border = {
+                            top: {
+                                style: 'thin'
+                            },
+                            left: {
+                                style: 'thin'
+                            },
+                            bottom: {
+                                style: 'thin'
+                            },
+                            right: {
+                                style: 'thin'
+                            }
+                        };
+                    });
+                }
+            });
+        }
+
+        // Auto fit columns
+        worksheet.columns.forEach(column => {
+            let maxLength = 0;
+            column.eachCell({
+                includeEmpty: true
+            }, function(cell) {
+                const columnLength = cell.value ? cell.value.toString().length : 10;
+                if (columnLength > maxLength) {
+                    maxLength = columnLength;
+                }
+            });
+            column.width = maxLength + 4;
+        });
+
+        // Download
+        const buf = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buf]), `Progress_${projectName.replace(/\s+/g, '_')}_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}.xlsx`);
+    }
+
+
+
     function rollbackEdit(projectId) {
         // AJAX request ke route yang akan set update_status = false
         $.ajax({
