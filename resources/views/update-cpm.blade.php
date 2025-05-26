@@ -208,7 +208,7 @@
         let headers = [];
         if (thead) {
             thead.querySelectorAll('th').forEach((th, idx) => {
-                if (![1, 2, 7].includes(idx)) {
+                if (![1, 7].includes(idx)) {
                     headers.push(th.textContent.trim());
                 }
             });
@@ -247,7 +247,7 @@
             tbody.querySelectorAll('tr').forEach((tr, trIdx) => {
                 const row = [];
                 tr.querySelectorAll('td').forEach((td, tdIdx) => {
-                    if (![1, 2, 7].includes(tdIdx)) {
+                    if (![1, 7].includes(tdIdx)) {
                         let value = td.innerText.replace(/\s+/g, ' ').trim();
                         row.push(value === "" ? "-" : value);
                     }
