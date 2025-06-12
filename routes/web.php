@@ -33,6 +33,7 @@ Route::post('/project/save-all', [ProjectController::class, 'saveAll'])->name('p
 Route::post('/project/rollback-edit', [ProjectController::class, 'rollbackEdit'])->name('project.rollbackEdit');
 Route::post('/import-nodes', [NodeController::class, 'importNodes']);
 Route::post('/run-ai-predecessor', [NodeController::class, 'runAIPredecessor']);
+Route::post('/delete-project/{id}', [ProjectController::class, 'deleteProject'])->name('project.delete');
 
 
 

@@ -16,6 +16,42 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
+        function deleteProject(projectId) {
+            Swal.fire({
+                title: 'Apakah anda yakin untuk menghapus project ini?',
+                text: "Semua data terkait akan terhapus permanen!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "/delete-project/" + projectId,
+                        type: "POST",
+                        data: {
+                            _token: $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire('Berhasil', response.message, 'success')
+                                    .then(() => {
+                                        window.location.href = "{{ route('view-project') }}";
+                                    });
+                            } else {
+                                Swal.fire('Gagal', response.message, 'error');
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Error', xhr.responseJSON?.message || 'Terjadi error saat hapus', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
         function addDropdown(element) {
             const container = element.closest('tr').querySelector('.dropdown-container');
             const newDropdown = document.createElement('div');
@@ -145,7 +181,7 @@
         <div class="w-full p-4 bg-gray-800 rounded-lg shadow-lg">
             <h1 class="text-4xl font-extrabold text-white mb-4">Detail CPM</h1>
             <div class="flex justify-end" style="gap: 10px">
-            <a href="{{ route('view-project') }}">
+                <a href="{{ route('view-project') }}">
                     <button class="px-8 py-3 bg-blue-600 text-white rounded-md shadow-lg transition duration-300 hover:bg-blue-700 font-inter">
                         <i class="fa-solid fa-arrow-left"></i> Back
                     </button>
@@ -155,6 +191,11 @@
                     Save All
                 </button>
                 <button onclick="exportExcel()" class="bg-green-900 hover:bg-green-700 text-white px-4 py-2 rounded-md justify-end">Export to Excel</button>
+                <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+                    onclick="deleteProject('{{ $projects->idproject }}')">
+                    <i class="fa-solid fa-trash"></i> Delete Project
+                </button>
+
             </div>
 
             <table id="tableData" class="w-full text-white border-separate border-spacing-2">

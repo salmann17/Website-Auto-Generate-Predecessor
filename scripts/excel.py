@@ -7,7 +7,6 @@ app = Flask(__name__)
 CORS(app)
 
 def parse_row(row):
-    # Kolom: 0=No, 1=Detail Item, 2=Duration, 3=Description, 4=Total Price, 5=Vol, 6=UoM
     no_col = str(row[0]).strip() if row[0] is not None else ''
     name = str(row[1]).strip() if row[1] else ''
     vol = row[2] if len(row) > 5 and row[5] else 0
