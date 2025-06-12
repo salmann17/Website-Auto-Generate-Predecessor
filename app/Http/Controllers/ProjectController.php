@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Activity;
 use App\Models\Node;
 use App\Models\Predecessor;
 use App\Models\Project;
+use App\Models\SubActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -26,6 +28,38 @@ class ProjectController extends Controller
     {
         //
     }
+    public function deleteProject($id)
+    {
+        DB::beginTransaction();
+        try {
+            $project = Project::findOrFail($id);
+
+            $nodeIds = Node::whereHas('subActivity.activity', function ($q) use ($id) {
+                $q->where('idproject', $id);
+            })->pluck('idnode');
+
+            Predecessor::whereIn('node_core', $nodeIds)->orWhereIn('node_cabang', $nodeIds)->delete();
+
+            Node::whereHas('subActivity.activity', function ($q) use ($id) {
+                $q->where('idproject', $id);
+            })->delete();
+
+            SubActivity::whereHas('activity', function ($q) use ($id) {
+                $q->where('idproject', $id);
+            })->delete();
+
+            Activity::where('idproject', $id)->delete();
+
+            $project->delete();
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Project beserta seluruh data terkait berhasil dihapus!']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal hapus project: ' . $e->getMessage()]);
+        }
+    }
+
 
     /**
      * Store a newly created resource in storage.
