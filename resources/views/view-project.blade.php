@@ -22,7 +22,7 @@
                         <th class="p-4 text-center">Nama Project</th>
                         <th class="p-4 text-center">Deskripsi</th>
                         <th class="p-4 text-center">Alamat</th>
-                        <th class="p-4 text-center">Progress</th>
+                        <th class="p-4 text-center">Total Progress</th>
                         <th class="p-4">Aksi</th>
                     </tr>
                 </thead>
