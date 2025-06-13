@@ -17,7 +17,25 @@ class ProjectController extends Controller
      */
     public function index()
     {
-        $projects = Project::orderBy('idproject', 'desc')->get();
+        $projects = Project::with('activities.subActivities.nodes')
+            ->orderBy('idproject', 'desc')
+            ->get();
+
+        foreach ($projects as $project) {
+            $nodes = $project->activities
+                ->flatMap(fn($activity) => $activity->subActivities)
+                ->flatMap(fn($subActivity) => $subActivity->nodes);
+
+            $totalBobotRealisasi = $nodes->sum('bobot_realisasi');
+            $totalBobotRencana = $nodes->sum('bobot_rencana');
+
+            $progressPersen = $totalBobotRencana > 0
+                ? round(($totalBobotRealisasi / $totalBobotRencana) * 100, 1)
+                : 0;
+
+            $project->progressPersen = $progressPersen;
+        }
+
         return view('view-project', compact('projects'));
     }
 

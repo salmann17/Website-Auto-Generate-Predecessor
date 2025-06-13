@@ -22,6 +22,7 @@
                         <th class="p-4 text-center">Nama Project</th>
                         <th class="p-4 text-center">Deskripsi</th>
                         <th class="p-4 text-center">Alamat</th>
+                        <th class="p-4 text-center">Progress</th>
                         <th class="p-4">Aksi</th>
                     </tr>
                 </thead>
@@ -31,6 +32,7 @@
                         <td class="p-4 font-bold text-center">{{ $project->nama }}</td>
                         <td class="p-4 text-center">{{ $project->deskripsi ?? '-' }}</td>
                         <td class="p-4 text-center">{{ $project->alamat ?? '-' }}</td>
+                        <td class="p-4 text-center">{{ $project->progressPersen ?? '-' }}%</td>
                         <td class="p-4 text-center space-x-2">
                             @if ($project->update_status)
                                 <button class="px-4 py-1 bg-gray-400 text-white rounded-full text-xs" disabled>
