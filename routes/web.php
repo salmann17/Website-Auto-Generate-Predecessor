@@ -9,6 +9,7 @@ Route::get('/', function () {
 });
 
 Route::get('/view-project', [ProjectController::class, 'index'])->name('view-project');
+Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
 Route::get('/detail-cpm/{id}', [NodeController::class, 'show'])->name('nodes.show');
 Route::get('/update-cpm/{id}', [NodeController::class, 'showUpdate'])->name('nodes.showUpdate');
 

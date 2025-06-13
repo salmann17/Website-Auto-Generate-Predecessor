@@ -15,11 +15,18 @@ class ProjectController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $projects = Project::with('activities.subActivities.nodes')
-            ->orderBy('idproject', 'desc')
-            ->get();
+        $search = $request->input('search');
+
+        $query = Project::with('activities.subActivities.nodes');
+
+        $query->when($search, function ($q, $search) {
+            return $q->where('nama', 'like', "%{$search}%")
+                     ->orWhere('deskripsi', 'like', "%{$search}%");
+        });
+
+        $projects = $query->orderBy('idproject', 'desc')->paginate(20);
 
         foreach ($projects as $project) {
             $nodes = $project->activities
@@ -36,7 +43,7 @@ class ProjectController extends Controller
             $project->progressPersen = $progressPersen;
         }
 
-        return view('view-project', compact('projects'));
+        return view('view-project', compact('projects', 'search'));
     }
 
     /**
