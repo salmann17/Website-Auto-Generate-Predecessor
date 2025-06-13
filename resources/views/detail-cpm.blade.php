@@ -203,6 +203,7 @@
                     <tr class="bg-gray-700">
                         <th class="p-2 border-b">Activity</th>
                         <th class="p-2 border-b">Volume</th>
+                        <th class="p-2 border-b">UoM</th>
                         <th class="p-2 border-b">Durasi</th>
                         <th class="p-2 border-b">Syarat</th>
                         <!-- <th class="p-2 border-b">Aksi</th> -->
@@ -232,7 +233,8 @@
                     @foreach ($subActivity->nodes as $node)
                     <tr class="bg-gray-800 text-gray-400 transition duration-150" data-node-id="{{ $node->idnode }}" data-prerequisites='["Activity A"]'>
                         <td class="p-4 pl-12">- {{ $node->activity }}</td>
-                        <td class="p-4">{{ $node->volume}} {{ $node->UoM }}</td>
+                        <td class="p-4">{{ $node->volume}}</td>
+                        <td class="p-4">{{ $node->UoM }}</td>
                         <td class="p-4">{{ $node->durasi }}</td>
                         <td>
                             @if($node->predecessors->isEmpty())

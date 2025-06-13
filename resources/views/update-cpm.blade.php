@@ -90,6 +90,7 @@
                         <th class="p-2 border-b">Durasi </th>
                         <th class="p-2 border-b">Syarat</th>
                         <th class="p-2 border-b">Volume</th>
+                        <th class="p-2 border-b">UoM</th>
                         <th class="p-2 border-b">Update Volume Realisasi</th>
                         <th class="p-2 border-b">Bobot RAB</th>
                         <th class="p-2 border-b">Bobot Realisasi</th>
@@ -126,7 +127,8 @@
                             @endforeach
                         </td>
 
-                        <td> {{$node->volume}} {{$node->UoM}} </td>
+                        <td> {{$node->volume}}</td>
+                        <td> {{$node->UoM}} </td>
 
                         <td class="text-center align-middle" id="node-{{ $node->idnode }}-vol-cell">
                             @if($node->volume_realisasi >= $node->volume && $node->volume > 0)
