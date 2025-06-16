@@ -29,7 +29,7 @@
                         <div>
                             <div class="uppercase text-xs font-bold text-blue-100 mb-1 tracking-widest">
                                 Progress Total Realisasi Proyek
-                            </div>                         
+                            </div>
                         </div>
                         <div class="flex flex-col items-center justify-center min-w-[120px]">
                             <!-- Circular Progress SVG -->
@@ -244,7 +244,7 @@
         }
 
         const tbody = table.querySelector('tbody');
-        let rowNum = 4; 
+        let rowNum = 4;
         if (tbody) {
             tbody.querySelectorAll('tr').forEach((tr, trIdx) => {
                 const row = [];
@@ -338,37 +338,49 @@
     function updateVolumeRealisasi(nodeId, prevVolumeRealisasi, nodeVolume, bobotRencana, uom) {
         Swal.fire({
             title: 'Update Volume Realisasi',
-            input: 'number',
-            inputLabel: `Masukkan volume realisasi baru (max: ${nodeVolume - prevVolumeRealisasi} ${uom})`,
-            inputValue: 0,
-            inputAttributes: {
-                min: 0,
-                max: nodeVolume - prevVolumeRealisasi,
-                step: 0.01
-            },
+            html: `<div class="mb-2 flex flex-col gap-2 items-start">
+                <label>Pilih Aksi:</label>
+                <select id="aksi" class="swal2-input" style="width:140px">
+                    <option value="plus">Tambah (+)</option>
+                    <option value="minus">Kurangi (-)</option>
+                </select>
+                <label class="mt-2">Jumlah (max: ${nodeVolume} ${uom})</label>
+                <label class="mt-2">Sisa : ${nodeVolume - prevVolumeRealisasi}</label>
+                <input type="number" id="jumlah" class="swal2-input" min="0.01" step="0.01" value="0">
+            </div>`,
             showCancelButton: true,
             confirmButtonText: 'Update',
-            preConfirm: (value) => {
-                let val = parseFloat(value);
-                if (isNaN(val) || val <= 0) {
-                    Swal.showValidationMessage('Masukkan angka lebih dari 0!');
+            preConfirm: () => {
+                const aksi = document.getElementById('aksi').value;
+                const jumlah = parseFloat(document.getElementById('jumlah').value);
+                if (isNaN(jumlah) || jumlah <= 0) {
+                    Swal.showValidationMessage('Masukkan jumlah lebih dari 0!');
                     return false;
                 }
-                if ((parseFloat(prevVolumeRealisasi) + val) > parseFloat(nodeVolume)) {
+                if (aksi === 'plus' && (parseFloat(prevVolumeRealisasi) + jumlah) > parseFloat(nodeVolume)) {
                     Swal.showValidationMessage('Total realisasi melebihi volume!');
                     return false;
                 }
-                return val;
+                if (aksi === 'minus' && (parseFloat(prevVolumeRealisasi) - jumlah) < 0) {
+                    Swal.showValidationMessage('Total realisasi tidak boleh kurang dari 0!');
+                    return false;
+                }
+                return {
+                    aksi,
+                    jumlah
+                };
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                let tambah = parseFloat(result.value);
+                const aksi = result.value.aksi;
+                const jumlah = result.value.jumlah;
                 $.ajax({
                     url: "{{ route('updateVolumeRealisasi') }}",
                     method: 'POST',
                     data: {
                         node_id: nodeId,
-                        tambah: tambah,
+                        jumlah: jumlah,
+                        aksi: aksi,
                         _token: $('meta[name="csrf-token"]').attr('content')
                     },
                     success: function(response) {
@@ -406,6 +418,7 @@
             }
         });
     }
+
 
     function getRekomendasi(nodeId) {
         const projectId = document.getElementById('project_id').value;

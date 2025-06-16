@@ -416,7 +416,8 @@ class NodeController extends Controller
     {
         $request->validate([
             'node_id' => 'required|integer',
-            'tambah' => 'required|numeric|min:0',
+            'jumlah' => 'required|numeric|min:0.01',
+            'aksi' => 'required|in:plus,minus',
         ]);
 
         $node = Node::find($request->node_id);
@@ -425,15 +426,21 @@ class NodeController extends Controller
         }
 
         $prev = (float) $node->volume_realisasi;
-        $tambah = (float) $request->tambah;
-        $volume_baru = $prev + $tambah;
+        $jumlah = (float) $request->jumlah;
 
-        // Pastikan tidak lebih dari volume rencana
-        if ($volume_baru > $node->volume) {
-            return response()->json(['success' => false, 'message' => 'Volume realisasi melebihi volume rencana!'], 422);
+        // Update sesuai aksi
+        if ($request->aksi === 'plus') {
+            $volume_baru = $prev + $jumlah;
+            if ($volume_baru > $node->volume) {
+                return response()->json(['success' => false, 'message' => 'Volume realisasi melebihi volume rencana!'], 422);
+            }
+        } else {
+            $volume_baru = $prev - $jumlah;
+            if ($volume_baru < 0) {
+                return response()->json(['success' => false, 'message' => 'Volume realisasi tidak boleh kurang dari 0!'], 422);
+            }
         }
 
-        // Update volume realisasi
         $node->volume_realisasi = $volume_baru;
 
         // Hitung bobot realisasi
@@ -452,8 +459,6 @@ class NodeController extends Controller
             'bobot_realisasi_baru' => $bobot_realisasi
         ]);
     }
-
-
 
     public function getRekomendasi(Request $request)
     {
