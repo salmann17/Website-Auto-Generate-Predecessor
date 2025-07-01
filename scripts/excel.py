@@ -9,9 +9,9 @@ CORS(app)
 def parse_row(row):
     no_col = str(row[0]).strip() if row[0] is not None else ''
     name = str(row[1]).strip() if row[1] else ''
-    vol = row[2] if len(row) > 5 and row[5] else 0
+    vol = row[2] if len(row) > 2 and row[2] else 0
     uom = str(row[3]).strip() if len(row) > 3 and row[3] else ''
-    duration = row[5] if len(row) > 2 and row[2] else 0
+    duration = row[5] if len(row) > 5 and row[5] else 0
     description = row[6] if len(row) > 6 and row[6] else ''
     total_price = row[4] if len(row) > 4 and row[4] else 0
     
